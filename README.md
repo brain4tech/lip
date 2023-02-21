@@ -74,10 +74,12 @@ Some general things to consider, before going into the details:
 Speaking of return values, you'll always get a meaningful status code and response JSON `{"info": "<info here>"}`, which are specified per endpoint below. The info always contains a string in case an error code occurs, `200`'s don't contain more information except when specified.
 
 ### `/` (GET)
-*Check service availability*
+*Check service availability.*
 
 **Returns:**
 - `200`, `info` contains 'hello localip-pub'
+
+---
 
 ### `/create`
 *Creates a new id to store an ip address.*
@@ -93,6 +95,7 @@ Speaking of return values, you'll always get a meaningful status code and respon
 - `200` on a successful id creation
 - `409` if the id already exists
 
+---
 
 ### `/update`
 *Updates an id.*
@@ -110,6 +113,7 @@ Speaking of return values, you'll always get a meaningful status code and respon
 - `400` if the passed ip address is not an ip address (both IPv4 and IPv6 are supported)
 - `404` if the id does not exist
 
+---
 
 ### `/retrieve`
 *Gets the ip address to an id.*
