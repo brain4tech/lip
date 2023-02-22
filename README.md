@@ -91,7 +91,8 @@ Speaking of return values, you'll always get a meaningful status code and respon
 **Requires:**
 ```json
 {
-    "id": "<new_id>"
+    "id": "<new_id>",
+    "password": "<password>"
 }
 ```
 
@@ -108,6 +109,7 @@ Speaking of return values, you'll always get a meaningful status code and respon
 ```json
 {
     "id": "<id>",
+    "password": "<password>",
     "ip_address": "<ip address>"
 }
 ```
@@ -115,7 +117,7 @@ Speaking of return values, you'll always get a meaningful status code and respon
 **Returns:**
 - `200` on a successful update
 - `400` if the passed ip address is not an ip address (both IPv4 and IPv6 are supported)
-- `404` if the id does not exist
+- `401` if id and password do not match
 
 ---
 
@@ -125,12 +127,13 @@ Speaking of return values, you'll always get a meaningful status code and respon
 **Requires:**
 ```json
 {
-    "id": "<id>"
+    "id": "<id>",
+    "password": "<password>"
 }
 ```
 
 **Returns:**
 - `200` on a successful update, `info` contains the ip address
-- `400` if the id does not exist
+- `401` if id and password do not match
 
 ---

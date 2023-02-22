@@ -21,7 +21,6 @@ class EndpointHandler {
         if (!this.dbHandler.initSuccessful()) {
             throw new Error("Failed to initialize database.")
         }
-
     }
 
     retrieveAddress(data: RetrieveObject): EndpointReturnObject {
@@ -29,13 +28,13 @@ class EndpointHandler {
         const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(data.id)
         if (ipAddress == null) {
             // technically 'id does not exist' would be enough, but is prone to attacks
-            return this.response("invalid combination of id and password", 400)
+            return this.response("invalid combination of id and password", 401)
         }
 
         // check if passwords match
         const passwordHash = createHash('sha256').update(data.password).digest('hex')
         if (passwordHash != ipAddress.passwordHash) {
-            return this.response("id and password do not match", 404)
+            return this.response("invalid combination of id and password", 401)
         }
 
         return this.response(ipAddress.ipAddress)
@@ -67,13 +66,13 @@ class EndpointHandler {
         // check if id exists to prevent unneccessary calculations
         const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(data.id)
         if (ipAddress == null) {
-            return this.response("id and password do not match", 404)
+            return this.response("invalid combination of id and password", 401)
         }
 
         // check if passwords match
         const passwordHash = createHash('sha256').update(data.password).digest('hex')
         if (passwordHash != ipAddress.passwordHash) {
-            return this.response("id and password do not match", 404)
+            return this.response("invalid combination of id and password", 401)
         }
 
         this.dbHandler.updateAddress(data.id, data.ip_address)
