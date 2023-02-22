@@ -20,6 +20,7 @@ It's ...
   - [Authentication with JWTs](#authentication-with-jwts)
   - [`/` (GET)](#-get)
   - [`/create`](#create)
+  - [`/jwt`](#jwt)
   - [`/update`](#update)
   - [`/retrieve`](#retrieve)
 
@@ -45,7 +46,7 @@ Currently there are several features missing for the project to be "completed":
 
 -  [x] protect reading/writing id's using passwords
 -  [x] use JWTs for regular address updating
--  [ ] add jwt requiring cooldown
+-  [ ] add jwt requiring cooldown + modify jwt expire date
 -  [ ] use bcrypt password hashing instead of sha256 for improved security
 -  [ ] set lifetime of an id to free id after usage (infinite should also be possible)
 -  [ ] overview on existing id's and their lifetime
@@ -55,7 +56,6 @@ Currently there are several features missing for the project to be "completed":
 Possible features for post project completion could be:
 - a password reset feature, connected to an email
 - multiple sdk implementations for both publishing and retrieving ip addresses
-
 
 ## A bit on the Why's
 Basically *localip-sub* is a text-sharing application, where each text is secured with a pre-known id and password. So when starting a "server" and "client" that should communicate, but are unable to find each other (because of e.g. outer restrictions), they can use the set id and password to publish and retrieve the correct ip addresses.
@@ -73,12 +73,18 @@ A tangible example would be a server on a local machine and a web application th
 
 Some general things to consider, before going into the details:
 - less is more. *localip-pub* tries to minify the amount of endpoints. If not specified, all endpoints are `POST`.
-- JSON is the only supported body content type. Make sure to set the `Content-Type`-header to `application/json`, else the application won't work and you'll receive a `400` status code
+- JSON is the only supported body content type. Make sure to set the `Content-Type`-header to `application/json`, else the application won't work and you'll receive a non-`200` status code
+- you'll always get a meaningful status code and response JSON `{"info": "<info here>"}` (specified per endpoint)
+- `info` always contains some information in case of an error, `200`'s don't contain more information except when specified
 
-Speaking of return values, you'll always get a meaningful status code and response JSON `{"info": "<info here>"}`, which are specified per endpoint below. The info always contains a string in case an error code occurs, `200`'s don't contain more information except when specified.
+The example return JSONs are only returned on code `200`.
 
 ### Authentication with JWTs
-- re-run of programm allows read-tokens to work, but write-tokens need to be reassigned (change of secret on each run disables this)
+
+- use JWTs instead of id + password for faster updating and retrieving, because it skips the password checking part
+- two JWT modes: *read* is for retrieving, *write* for updating ip addresses
+- *read* tokens stay over restarts, *write* tokens need to be initialized after restarts
+- modify JWT secret to invalidate all tokens
 
 ---
 
@@ -86,6 +92,11 @@ Speaking of return values, you'll always get a meaningful status code and respon
 *Check service availability.*
 
 **Returns:**
+```json
+{
+    "info": "hello localip-pub"
+}
+```
 - `200`, `info` contains 'hello localip-pub'
 
 ---
@@ -107,22 +118,65 @@ Speaking of return values, you'll always get a meaningful status code and respon
 
 ---
 
+### `/jwt`
+*Get a JWT for easier long-term updating/retrieving.*
+
+**Requires:**
+```json
+# password authentication
+{
+    "id": "<id>",
+    "password": "<password>",
+    "mode": "read" | "write"
+}
+``` 
+
+**Returns:**
+```json
+{
+    "info": "<jwt>"
+}
+```
+
+- `200` successful jwt generation
+- `400` invalid mode
+- `401` invalid authentication
+- `409` write jwt for id already exists
+
+---
+
 ### `/update`
 *Updates an id.*
 
 **Requires:**
 ```json
+# password authentication
 {
     "id": "<id>",
     "password": "<password>",
     "ip_address": "<ip address>"
 }
+``` 
+
+```json
+# jwt authentication (write)
+{
+    "jwt": "<jwt>",
+    "ip_address": "<ip address>"
+}
 ```
 
 **Returns:**
+```json
+{
+    "info": "",
+    "last_update": timestamp
+}
+```
+
 - `200` on a successful update
-- `400` if the passed ip address is not an ip address (both IPv4 and IPv6 are supported)
-- `401` if id and password do not match
+- `400` invalid JSON object, invalid ip address
+- `401` invalid authentication (id does not exist, wrong password, invalid jwt, wrong jwt mode)
 
 ---
 
@@ -131,14 +185,30 @@ Speaking of return values, you'll always get a meaningful status code and respon
 
 **Requires:**
 ```json
+# password authentication
 {
     "id": "<id>",
-    "password": "<password>"
+    "password": "<password>",
+}
+``` 
+
+```json
+# jwt authentication (read)
+{
+    "jwt": "<jwt>",
 }
 ```
 
 **Returns:**
-- `200` on a successful update, `info` contains the ip address
-- `401` if id and password do not match
+```json
+{
+    "info": "<ip address>",
+    "last_update": timestamp
+}
+```
+
+- `200` on a successful update
+- `400` invalid JSON object
+- `401` invalid authentication (id does not exist, wrong password, invalid jwt, wrong jwt mode)
 
 ---
