@@ -1,29 +1,34 @@
 export {DbHandlerInterface, AddressDbSet}
 export {RetrieveObject, CreateObject, UpdateObject}
 export {JWTAcquiringObject, JWTPayload}
+export {AuthObject, AuthReturnObject}
 export {EndpointReturnObject}
 
 type AddressDbSet = {
     id: string
     passwordHash: string
     ipAddress: string
+    last_update: number
 }
-
-type RetrieveObject = {
-    id: string
-    password: string
+type AuthObject =  {
+    id?: string
+    password?: string
     jwt?: string
 }
+
+type AuthReturnObject = {
+    code: number
+    id?: string
+}
+
+type RetrieveObject = AuthObject
 
 type CreateObject = {
     id: string
     password: string
 }
 
-type UpdateObject = {
-    id: string
-    password: string
-    jwt?: string
+type UpdateObject = AuthObject & {
     ip_address: string
 }
 
@@ -42,7 +47,7 @@ type JWTPayload = {
 type EndpointReturnObject = {
     return: {
         info: string
-        timestamp?: string
+        last_update?: number
     }
     code: number
 }
@@ -54,5 +59,5 @@ interface DbHandlerInterface {
 
     createAddress(id: string, passwordHash: string): boolean
 
-    updateAddress(id: string, ip_address: string): boolean
+    updateAddress(id: string, ip_address: string, timestamp: number): boolean
 }

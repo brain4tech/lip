@@ -17,6 +17,7 @@ It's ...
 - [A bit on the Why's](#a-bit-on-the-whys)
 - [About internal architectures and made decisions](#about-internal-architectures-and-made-decisions)
 - [API documentation](#api-documentation)
+  - [Authentication with JWTs](#authentication-with-jwts)
   - [`/` (GET)](#-get)
   - [`/create`](#create)
   - [`/update`](#update)
@@ -43,7 +44,8 @@ And you are good to go. *localip-pub* creates a new SQLite database called `db.s
 Currently there are several features missing for the project to be "completed":
 
 -  [x] protect reading/writing id's using passwords
--  [ ] use JWTs for regular address updating
+-  [x] use JWTs for regular address updating
+-  [ ] add jwt requiring cooldown
 -  [ ] use bcrypt password hashing instead of sha256 for improved security
 -  [ ] set lifetime of an id to free id after usage (infinite should also be possible)
 -  [ ] overview on existing id's and their lifetime
@@ -74,6 +76,9 @@ Some general things to consider, before going into the details:
 - JSON is the only supported body content type. Make sure to set the `Content-Type`-header to `application/json`, else the application won't work and you'll receive a `400` status code
 
 Speaking of return values, you'll always get a meaningful status code and response JSON `{"info": "<info here>"}`, which are specified per endpoint below. The info always contains a string in case an error code occurs, `200`'s don't contain more information except when specified.
+
+### Authentication with JWTs
+- re-run of programm allows read-tokens to work, but write-tokens need to be reassigned (change of secret on each run disables this)
 
 ---
 

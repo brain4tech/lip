@@ -15,20 +15,27 @@ let endpointHandler = new EndpointHandler()
 app.get('/', () => JSON.stringify({info: 'hello localip-pub'}))
 
 // retrieve ip addresses
-app.post('/retrieve', ({body, set}) => {
-        const returnObject = endpointHandler.retrieveAddress(body)
+app.post('/retrieve', async ({body, set, jwt}) => {
+        const returnObject = await endpointHandler.retrieveAddress(body, jwt)
         set.status = returnObject.code
         return returnObject.return
     },
     {
         schema: {
-            body: t.Object({
-                id: t.String(),
-                password: t.String(),
-                jwt: t.Optional(t.String()),
-            }),
+            body: t.Union(
+                [
+                    t.Object({
+                        id: t.String(),
+                        password: t.String(),
+                    }),
+                    t.Object({
+                        jwt: t.String()
+                    })
+                ]
+            ),
             response: t.Object({
-                info: t.String()
+                info: t.String(),
+                last_update: t.Optional(t.Number())
             })
         }
     })
@@ -52,27 +59,33 @@ app.post('/create', ({body, set}) => {
     })
 
 // update ip address ip
-app.post('/update', ({body, set}) => {
-        const returnObject = endpointHandler.updateAddress(body)
+app.post('/update', async ({body, set, jwt}) => {
+        const returnObject = await endpointHandler.updateAddress(body, jwt)
         set.status = returnObject.code
         return returnObject.return
     },
     {
         schema: {
-            body: t.Object({
-                id: t.String(),
-                password: t.String(),
-                jwt: t.Optional(t.String()),
-                ip_address: t.String()
-            }),
+            body: t.Union(
+                [
+                    t.Object({
+                        id: t.String(),
+                        password: t.String(),
+                    }),
+                    t.Object({
+                        jwt: t.String()
+                    })
+                ]
+            ),
             response: t.Object({
-                info: t.String()
+                info: t.String(),
+                last_update: t.Optional(t.Number())
             })
         }
     })
 
 // acquire jwt
-app.post('/jwt', async ({jwt, body, set}) => {
+app.post('/jwt', async ({body, set, jwt}) => {
     const returnObject = await endpointHandler.acquireJWT(body, jwt)
     set.status = returnObject.code
     return returnObject.return
@@ -98,7 +111,7 @@ app.onError(({code, set, error}) => {
 
     if (code == 'VALIDATION') {
         set.status = 400
-        return {info: 'could not validate json, please check json and content-type'}
+        return {info: 'could not validate json, please check json, content-type and documentation'}
     }
 
     if (code == 'NOT_FOUND') {
