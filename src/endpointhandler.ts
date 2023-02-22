@@ -30,14 +30,7 @@ class EndpointHandler {
     retrieveAddress(data: RetrieveObject): EndpointReturnObject {
 
         const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(data.id)
-        if (ipAddress == null) {
-            // technically 'id does not exist' would be enough, but is prone to attacks
-            return this.response("invalid combination of id and password", 401)
-        }
-
-        // check if passwords match
-        const passwordHash = createHash('sha256').update(data.password).digest('hex')
-        if (passwordHash != ipAddress.passwordHash) {
+        if (ipAddress == null || !this.authDataset(ipAddress, data.password)){
             return this.response("invalid combination of id and password", 401)
         }
 
@@ -67,15 +60,7 @@ class EndpointHandler {
             return this.response("invalid ip address", 400)
         }
 
-        // check if id exists to prevent unneccessary calculations
-        const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(data.id)
-        if (ipAddress == null) {
-            return this.response("invalid combination of id and password", 401)
-        }
-
-        // check if passwords match
-        const passwordHash = createHash('sha256').update(data.password).digest('hex')
-        if (passwordHash != ipAddress.passwordHash) {
+        if (!this.authId(data.id, data.password)){
             return this.response("invalid combination of id and password", 401)
         }
 
@@ -91,15 +76,7 @@ class EndpointHandler {
             return this.response("invalid jwt mode", 400)
         }
 
-        // check if id exists
-        const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(data.id)
-        if (ipAddress == null) {
-            return this.response("invalid combination of id and password", 401)
-        }
-
-        // check if passwords match
-        const passwordHash = createHash('sha256').update(data.password).digest('hex')
-        if (passwordHash != ipAddress.passwordHash) {
+        if (!this.authId(data.id, data.password)){
             return this.response("invalid combination of id and password", 401)
         }
 
@@ -120,6 +97,37 @@ class EndpointHandler {
         if (data.mode == 'write') this.writeJWTs.set(data.id, token)
 
         return this.response(token)
+    }
+
+    private authId(id: string, password: string): boolean {
+        // check if id exists
+        const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(id)
+        if (ipAddress == null) {
+            return false
+        }
+
+        // check if passwords match
+        const passwordHash = createHash('sha256').update(password).digest('hex')
+        if (passwordHash != ipAddress.passwordHash) {
+            return false
+        }
+
+        return true
+    }
+
+    private authDataset(dataset: AddressDbSet | null, password: string): boolean {
+        if (dataset == null) {
+            // technically 'id does not exist' would be enough, but is prone to attacks
+            return false
+        }
+
+        // check if passwords match
+        const passwordHash = createHash('sha256').update(password).digest('hex')
+        if (passwordHash != dataset.passwordHash) {
+            return false
+        }
+
+        return true
     }
 
     private response(message: string = "", code: number = 200): EndpointReturnObject {
