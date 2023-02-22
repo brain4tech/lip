@@ -8,6 +8,7 @@ import {
     UpdateObject
 } from "./interfaces"
 import {isIP} from "net"
+import { createHash } from "crypto"
 
 export {EndpointHandler}
 
@@ -32,9 +33,9 @@ class EndpointHandler {
         }
 
         // check if passwords match
-        let match: boolean = true
-        if (!match) {
-            return this.response("invalid combination of id and password", 400)
+        const passwordHash = createHash('sha256').update(data.password).digest('hex')
+        if (passwordHash != ipAddress.passwordHash) {
+            return this.response("id and password do not match", 404)
         }
 
         return this.response(ipAddress.ipAddress)
@@ -44,10 +45,15 @@ class EndpointHandler {
 
         // TODO validate id name (allowed letters, whitespaces, ...)
 
-        const ok = this.dbHandler.createAddress(data.id)
-        if (!ok) {
+        // check if id already exists to prevent unneccessary calculations
+        const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(data.id)
+        if (ipAddress != null) {
             return this.response("id already exists", 409)
         }
+
+        // calculate password hashes and store in db
+        let hash: string = createHash('sha256').update(data.password).digest('hex')
+        this.dbHandler.createAddress(data.id, hash)
 
         return this.response(`created new address '${data.id}'`)
     }
@@ -58,10 +64,19 @@ class EndpointHandler {
             return this.response("invalid ip address", 400)
         }
 
-        const ok = this.dbHandler.updateAddress(data.id, data.ip_address)
-        if (!ok) {
+        // check if id exists to prevent unneccessary calculations
+        const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(data.id)
+        if (ipAddress == null) {
             return this.response("id and password do not match", 404)
         }
+
+        // check if passwords match
+        const passwordHash = createHash('sha256').update(data.password).digest('hex')
+        if (passwordHash != ipAddress.passwordHash) {
+            return this.response("id and password do not match", 404)
+        }
+
+        this.dbHandler.updateAddress(data.id, data.ip_address)
 
         return this.response("")
     }

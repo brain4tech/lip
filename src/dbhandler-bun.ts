@@ -40,14 +40,15 @@ class BunDbHandler implements DbHandlerInterface {
 
         return {
             id: db_result.id,
+            passwordHash: db_result.password_hash,
             ipAddress: db_result.ip_address
         };
     }
 
-    createAddress(id: string): boolean {
+    createAddress(id: string, passwordHash: string): boolean {
 
         try {
-            this.db.run("INSERT INTO addresses (id, ip_address) VALUES (?, ?)", id, "");
+            this.db.run("INSERT INTO addresses (id, password_hash, ip_address) VALUES (?, ?, '')", id, passwordHash);
         } catch (error) {
             return false
         }
@@ -64,7 +65,7 @@ class BunDbHandler implements DbHandlerInterface {
     }
 
     private initDb(): void {
-        this.db.run("CREATE TABLE IF NOT EXISTS addresses (id TEXT PRIMARY KEY NOT NULL UNIQUE, ip_address TEXT)")
+        this.db.run("CREATE TABLE IF NOT EXISTS addresses (id TEXT PRIMARY KEY NOT NULL UNIQUE, password_hash TEXT, ip_address TEXT)")
     }
 
     private fillDb(): void {

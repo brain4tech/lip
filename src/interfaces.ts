@@ -4,21 +4,23 @@ export {EndpointReturnObject}
 
 type AddressDbSet = {
     id: string
-    passwordHash?: string
-    passwordSalt?: string
+    passwordHash: string
     ipAddress: string
 }
 
 type RetrieveObject = {
     id: string
+    password: string
 }
 
 type CreateObject = {
     id: string
+    password: string
 }
 
 type UpdateObject = {
     id: string
+    password: string
     ip_address: string
 }
 
@@ -34,7 +36,7 @@ interface DbHandlerInterface {
 
     retrieveAddress(id: string): AddressDbSet | null
 
-    createAddress(id: string): boolean
+    createAddress(id: string, passwordHash: string): boolean
 
     updateAddress(id: string, ip_address: string): boolean
 }

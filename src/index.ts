@@ -16,7 +16,8 @@ app.post('/retrieve', ({body, set}) => {
     {
         schema: {
             body: t.Object({
-                id: t.String()
+                id: t.String(),
+                password: t.String()
             }),
             response: t.Object({
                 info: t.String()
@@ -33,7 +34,8 @@ app.post('/create', ({body, set}) => {
     {
         schema: {
             body: t.Object({
-                id: t.String()
+                id: t.String(),
+                password: t.String()
             }),
             response: t.Object({
                 info: t.String()
@@ -51,6 +53,7 @@ app.post('/update', ({body, set}) => {
         schema: {
             body: t.Object({
                 id: t.String(),
+                password: t.String(),
                 ip_address: t.String()
             }),
             response: t.Object({

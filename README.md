@@ -42,8 +42,10 @@ And you are good to go. *localip-pub* creates a new SQLite database called `db.s
 
 Currently there are several features missing for the project to be "completed":
 
--  [ ] protect reading/writing id's using passwords and JWT's
--  [ ] set lifetime of an id to free up id after usage (infinite should also be possible)
+-  [x] protect reading/writing id's using passwords
+-  [ ] use JWTs for regular address updating
+-  [ ] use bcrypt password hashing instead of sha256 for improved security
+-  [ ] set lifetime of an id to free id after usage (infinite should also be possible)
 -  [ ] overview on existing id's and their lifetime
 -  [ ] easy deployment with docker and docker compose
 -  [ ] some documentation in the source code
