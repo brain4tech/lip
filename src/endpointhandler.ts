@@ -5,7 +5,9 @@ import {
     DbHandlerInterface,
     EndpointReturnObject,
     RetrieveObject,
-    UpdateObject
+    UpdateObject,
+    JWTAcquiringObject,
+    JWTPayload
 } from "./interfaces"
 import {isIP} from "net"
 import { createHash } from "crypto"
@@ -14,9 +16,11 @@ export {EndpointHandler}
 
 class EndpointHandler {
     private dbHandler: DbHandlerInterface
+    private writeJWTs: Map<string, string>
 
     constructor() {
         this.dbHandler = new BunDbHandler()
+        this.writeJWTs = new Map<string, string>()
 
         if (!this.dbHandler.initSuccessful()) {
             throw new Error("Failed to initialize database.")
@@ -78,6 +82,44 @@ class EndpointHandler {
         this.dbHandler.updateAddress(data.id, data.ip_address)
 
         return this.response("")
+    }
+
+    async acquireJWT(data: JWTAcquiringObject, jwt: any): Promise<EndpointReturnObject>{
+
+        // check if valid modes
+        if (data.mode != 'write' && data.mode != 'read'){
+            return this.response("invalid jwt mode", 400)
+        }
+
+        // check if id exists
+        const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(data.id)
+        if (ipAddress == null) {
+            return this.response("invalid combination of id and password", 401)
+        }
+
+        // check if passwords match
+        const passwordHash = createHash('sha256').update(data.password).digest('hex')
+        if (passwordHash != ipAddress.passwordHash) {
+            return this.response("invalid combination of id and password", 401)
+        }
+
+        // prevent multiple write tokens
+        if (data.mode === 'write' && this.writeJWTs.has(data.id)){
+            if (await jwt.verify(this.writeJWTs.get(data.id))){
+                return this.response("write jwt already exists", 409)
+            } else {
+                this.writeJWTs.delete(data.id)
+            }
+        }
+
+        // generate jwt
+        const tokenPayload: JWTPayload = {id: data.id, mode: data.mode, timestamp: Date.now()}
+        const token: string = await jwt.sign(tokenPayload)
+
+        // register write token
+        if (data.mode == 'write') this.writeJWTs.set(data.id, token)
+
+        return this.response(token)
     }
 
     private response(message: string = "", code: number = 200): EndpointReturnObject {

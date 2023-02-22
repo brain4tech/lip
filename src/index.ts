@@ -1,7 +1,14 @@
 import Elysia, {t} from 'elysia'
+import { jwt } from '@elysiajs/jwt'
 import {EndpointHandler} from './endpointhandler'
 
 const app = new Elysia()
+app.use(
+    jwt({
+        name: 'jwt',
+        secret: 'LOCALIP_PUB_JWT_SECRET'
+    })
+)
 let endpointHandler = new EndpointHandler()
 
 // hello world
@@ -17,7 +24,8 @@ app.post('/retrieve', ({body, set}) => {
         schema: {
             body: t.Object({
                 id: t.String(),
-                password: t.String()
+                password: t.String(),
+                jwt: t.Optional(t.String()),
             }),
             response: t.Object({
                 info: t.String()
@@ -54,6 +62,7 @@ app.post('/update', ({body, set}) => {
             body: t.Object({
                 id: t.String(),
                 password: t.String(),
+                jwt: t.Optional(t.String()),
                 ip_address: t.String()
             }),
             response: t.Object({
@@ -61,6 +70,25 @@ app.post('/update', ({body, set}) => {
             })
         }
     })
+
+// acquire jwt
+app.post('/jwt', async ({jwt, body, set}) => {
+    const returnObject = await endpointHandler.acquireJWT(body, jwt)
+    set.status = returnObject.code
+    return returnObject.return
+},
+{
+    schema: {
+        body: t.Object({
+            id: t.String(),
+            password: t.String(),
+            mode: t.String()
+        }),
+        response: t.Object({
+            info: t.String()
+        })
+    }
+})
 
 // error handling
 app.onError(({code, set, error}) => {

@@ -1,5 +1,6 @@
 export {DbHandlerInterface, AddressDbSet}
 export {RetrieveObject, CreateObject, UpdateObject}
+export {JWTAcquiringObject, JWTPayload}
 export {EndpointReturnObject}
 
 type AddressDbSet = {
@@ -11,6 +12,7 @@ type AddressDbSet = {
 type RetrieveObject = {
     id: string
     password: string
+    jwt?: string
 }
 
 type CreateObject = {
@@ -21,12 +23,26 @@ type CreateObject = {
 type UpdateObject = {
     id: string
     password: string
+    jwt?: string
     ip_address: string
+}
+
+type JWTAcquiringObject = {
+    id: string
+    password: string
+    mode: string
+}
+
+type JWTPayload = {
+    id: string
+    mode: string
+    timestamp: number
 }
 
 type EndpointReturnObject = {
     return: {
         info: string
+        timestamp?: string
     }
     code: number
 }
