@@ -38,7 +38,7 @@ And you are good to go. *localip-pub* creates a new SQLite database called `db.s
 > You'll be better when using this solution in a closed, project-intern environment. Because of it's small footprint, it can be easily deployed on an existing project server, behind a secure proxy. This way, id's and ip's stay internal and id's do most likely not collide.
 
 ## Missing features and ToDo's
-*localip-pub* is in early development. The `main` branch will contain stable releases, whereas features are developed in `feature/<feature-name>` branches.
+*localip-pub* is in early development. The `main` branch will contain stable releases, whereas development takes place in `dev` and features are developed in `feat/<feature-name>` branches.
 
 Currently there are several features missing for the project to be "completed":
 
@@ -72,6 +72,8 @@ Some general things to consider, before going into the details:
 - JSON is the only supported body content type. Make sure to set the `Content-Type`-header to `application/json`, else the application won't work and you'll receive a `400` status code
 
 Speaking of return values, you'll always get a meaningful status code and response JSON `{"info": "<info here>"}`, which are specified per endpoint below. The info always contains a string in case an error code occurs, `200`'s don't contain more information except when specified.
+
+---
 
 ### `/` (GET)
 *Check service availability.*
@@ -128,3 +130,5 @@ Speaking of return values, you'll always get a meaningful status code and respon
 **Returns:**
 - `200` on a successful update, `info` contains the ip address
 - `400` if the id does not exist
+
+---
