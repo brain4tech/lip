@@ -1,0 +1,11 @@
+version: "3.9"
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - LOCALIP_PUB_DBNAME: <MY_DB_NAME>
+      - LOCALIP_PUB_JWT_SECRET: <MY_JWT_SECRET>
+    container_name: localip-pub
+    restart: always

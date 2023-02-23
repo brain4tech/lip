@@ -8,11 +8,16 @@ It's ...
 - **extensible**, so alternative web frameworks and runtimes can be used if desired (you will need to rewrite some code tho)
 - **easy-to-use** and **straight-forward**, because we don't like complicated APIs
 
-***localip-pub* is currently in development. While the `main` branch can be used in production, not all needed features will be included. Currently, the application starts on `0.0.0.0:3000` by default, this will change in future updates.**
+***localip-pub* is currently in development. While the `main` branch can be used in production, not all needed features will be included. Currently, the application starts on `0.0.0.0:8080` by default.**
 
 <h2>Table of Contents</h2>
 
 - [How to use it](#how-to-use-it)
+  - [Local installation](#local-installation)
+  - [Docker](#docker)
+  - [Docker compose](#docker-compose)
+  - [Environment variables](#environment-variables)
+  - [Final notice](#final-notice)
 - [Missing features and ToDo's](#missing-features-and-todos)
 - [A bit on the Why's](#a-bit-on-the-whys)
 - [About internal architectures and made decisions](#about-internal-architectures-and-made-decisions)
@@ -29,17 +34,63 @@ It's ...
 
 ## How to use it
 
+### Local installation
 Prerequesites:
 - working [bun](https://bun.sh/) environment
 - this repository
 
+Then, run
 ```sh
 bun run src/index.ts
 ```
 
-And you are good to go. *localip-pub* creates a new SQLite database called `db.sqlite` at the directory you started the command from. You can change this by setting the `LOCALIP_PUB_DBNAME` environment variable to the directory and name of your choice.
+and you are good to go.
 
-> You'll be better when using this solution in a closed, project-intern environment. Because of it's small footprint, it can be easily deployed on an existing project server, behind a secure proxy. This way, id's and ip's stay internal and id's do most likely not collide.
+### Docker
+
+Clone this repository and execute
+```sh
+docker build -t localip-pub .
+```
+
+You can now run the application with
+```sh
+docker run -p 8080:8080 -it localip-pub
+```
+
+### Docker compose
+Rename `docker-compose_template.yaml` to `docker-compose.yaml` and modify/remove the environment variables as you like.
+
+```yaml
+version: "3.9"
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - LOCALIP_PUB_DBNAME: <MY_DB_NAME>
+      - LOCALIP_PUB_JWT_SECRET: <MY_JWT_SECRET>
+    container_name: localip-pub
+    restart: always
+```
+
+Then, run
+```sh
+docker compose up -d
+```
+
+and the container should be build and executed automagically.
+
+### Environment variables
+*localip-pub* creates a new SQLite database called `db.sqlite` at the directory you started the command from. You can change this by setting the `LOCALIP_PUB_DBNAME` environment variable to the directory and name of your choice.
+
+JWT generation and validation requires a secret token. *localip-pub* provides a default secret, but it is advised to use your own one by setting the `LOCALIP_PUB_JWT_SECRET` environment variable.
+
+
+### Final notice
+You'll be better when using this solution in a closed, project-intern environment. Because of it's small footprint, it can be easily deployed on an existing project server, behind a secure proxy. This way, id's and ip's stay internal and id's do most likely not collide.
+
 
 ## Missing features and ToDo's
 *localip-pub* is in early development. The `main` branch will contain stable releases, whereas development takes place in `dev` and features are developed in `feat/<feature-name>` branches.
