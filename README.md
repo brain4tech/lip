@@ -16,13 +16,14 @@ It's ...
 - [Missing features and ToDo's](#missing-features-and-todos)
 - [A bit on the Why's](#a-bit-on-the-whys)
 - [About internal architectures and made decisions](#about-internal-architectures-and-made-decisions)
-- [API documentation](#api-documentation)
-  - [Authentication with JWTs](#authentication-with-jwts)
-  - [`/` (GET)](#-get)
-  - [`/create`](#create)
-  - [`/jwt`](#jwt)
-  - [`/update`](#update)
-  - [`/retrieve`](#retrieve)
+- [Documentation](#documentation)
+  - [Authentication methods](#authentication-methods)
+  - [API endpoint reference](#api-endpoint-reference)
+    - [`/` (GET)](#-get)
+    - [`/create`](#create)
+    - [`/jwt`](#jwt)
+    - [`/update`](#update)
+    - [`/retrieve`](#retrieve)
 
 
 ## How to use it
@@ -69,26 +70,36 @@ A tangible example would be a server on a local machine and a web application th
 ## About internal architectures and made decisions
 > ToDo
 
-## API documentation
+## Documentation
 
+### Authentication methods
+
+**TLDR;**
+- password authentication with `id` and `password` is always possible, but more resource intensive
+- for regular ip address updates and retrieves, use JWTs
+- get a JWT at [`/jwt`](#jwt) by providing credential and a token mode
+- possible token modes are *read* (only usable at [`/retrieve`](#retrieve)) and *write* (only usable at [`/update`](#update))
+
+When creating a new id, you'll be required to define a password. This is to protect the stored ip from being changed by someone unauthorized. This means that you need to add your credentials for each update an retrieval. This is no problem when updating/retrieving the ip *once*, but as soon as you are planning to update/retrieve the ip regularly, you'll be better using a JWT.
+
+JWTs are an alternate way of authentication. Instead of adding the id and password with every request, you simply add the JWT. By authenticating only once and proving that you already are authenticated by delivering the token, the system skips the (resource intensive) step of hashing and comparing passwords. You'll be able to update and retrieve ip addresses faster.
+
+To create a JWT, use the [`/jwt`](#jwt) endpoint. Authenticate with id and password, and set a JWt mode. There are two available modes: *read* and *write*. *read*-tokens can only be used at [`/retrieve`](#retrieve), and *write*-tokens can only be used at [`/update`](#update). In addition, only one *write*-token can be generated, while there are "infinite" *read*-tokens.
+
+*read*-tokens stay valid over multiple application restarts, while *write*-tokens need to be created after every restart. To invalidate all existing tokens, modify the JWT secret.
+
+### API endpoint reference
 Some general things to consider, before going into the details:
 - less is more. *localip-pub* tries to minify the amount of endpoints. If not specified, all endpoints are `POST`.
 - JSON is the only supported body content type. Make sure to set the `Content-Type`-header to `application/json`, else the application won't work and you'll receive a non-`200` status code
 - you'll always get a meaningful status code and response JSON `{"info": "<info here>"}` (specified per endpoint)
 - `info` always contains some information in case of an error, `200`'s don't contain more information except when specified
 
-The example return JSONs are only returned on code `200`.
-
-### Authentication with JWTs
-
-- use JWTs instead of id + password for faster updating and retrieving, because it skips the password checking part
-- two JWT modes: *read* is for retrieving, *write* for updating ip addresses
-- *read* tokens stay over restarts, *write* tokens need to be initialized after restarts
-- modify JWT secret to invalidate all tokens
+The return JSON examples below are only returned on code `200`.
 
 ---
 
-### `/` (GET)
+#### `/` (GET)
 *Check service availability.*
 
 **Returns:**
@@ -101,7 +112,7 @@ The example return JSONs are only returned on code `200`.
 
 ---
 
-### `/create`
+#### `/create`
 *Creates a new id to store an ip address.*
 
 **Requires:**
@@ -113,21 +124,26 @@ The example return JSONs are only returned on code `200`.
 ```
 
 **Returns:**
+```json
+{
+    "info": "created new address '<new_id>'"
+}
+```
 - `200` on a successful id creation
 - `409` if the id already exists
 
 ---
 
-### `/jwt`
+#### `/jwt`
 *Get a JWT for easier long-term updating/retrieving.*
 
 **Requires:**
 ```json
-# password authentication
+// password authentication
 {
     "id": "<id>",
     "password": "<password>",
-    "mode": "read" | "write"
+    "mode": "<mode>"
 }
 ``` 
 
@@ -139,18 +155,18 @@ The example return JSONs are only returned on code `200`.
 ```
 
 - `200` successful jwt generation
-- `400` invalid mode
+- `400` invalid/unknown mode
 - `401` invalid authentication
 - `409` write jwt for id already exists
 
 ---
 
-### `/update`
+#### `/update`
 *Updates an id.*
 
 **Requires:**
 ```json
-# password authentication
+// password authentication
 {
     "id": "<id>",
     "password": "<password>",
@@ -159,7 +175,7 @@ The example return JSONs are only returned on code `200`.
 ``` 
 
 ```json
-# jwt authentication (write)
+// jwt authentication (write)
 {
     "jwt": "<jwt>",
     "ip_address": "<ip address>"
@@ -170,7 +186,7 @@ The example return JSONs are only returned on code `200`.
 ```json
 {
     "info": "",
-    "last_update": timestamp
+    "last_update": timestamp    // integer
 }
 ```
 
@@ -180,12 +196,12 @@ The example return JSONs are only returned on code `200`.
 
 ---
 
-### `/retrieve`
+#### `/retrieve`
 *Gets the ip address to an id.*
 
 **Requires:**
 ```json
-# password authentication
+// password authentication
 {
     "id": "<id>",
     "password": "<password>",
@@ -193,7 +209,7 @@ The example return JSONs are only returned on code `200`.
 ``` 
 
 ```json
-# jwt authentication (read)
+// jwt authentication (read)
 {
     "jwt": "<jwt>",
 }
@@ -203,7 +219,7 @@ The example return JSONs are only returned on code `200`.
 ```json
 {
     "info": "<ip address>",
-    "last_update": timestamp
+    "last_update": timestamp    // integer
 }
 ```
 
