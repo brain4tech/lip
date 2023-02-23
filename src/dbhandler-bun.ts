@@ -5,9 +5,8 @@ export {BunDbHandler}
 
 class BunDbHandler implements DbHandlerInterface {
 
-    dbName: string
-
     private db: Database
+    private readonly dbName: string
     private readonly dbInitSuccessful: boolean
 
     constructor() {
