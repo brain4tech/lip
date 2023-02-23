@@ -6,7 +6,8 @@ const app = new Elysia()
 app.use(
     jwt({
         name: 'jwt',
-        secret: 'LOCALIP_PUB_JWT_SECRET'
+        secret: 'LOCALIP_PUB_JWT_SECRET',
+        exp: '6m'
     })
 )
 let endpointHandler = new EndpointHandler()
