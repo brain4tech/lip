@@ -67,19 +67,26 @@ class EndpointHandler {
 
     createAddress(data: CreateObject): EndpointReturnObject {
 
-        // TODO validate id name (allowed letters, whitespaces, ...)
+        let id: string = data.id.trim()
+        let password: string = data.password.trim()
+        
+        // TODO validate id (allowed letters, whitespaces, ...)
+        if (id === '') return this.response("id cannot be emtpy", 400)
+
+        // validate password
+        if (password === '') return this.response("password cannot be emtpy", 400)
 
         // check if id already exists to prevent unneccessary calculations
-        const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(data.id)
+        const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(id)
         if (ipAddress != null) {
             return this.response("id already exists", 409)
         }
 
         // calculate password hashes and store in db
-        let hash: string = createHash('sha256').update(data.password).digest('hex')
-        this.dbHandler.createAddress(data.id, hash)
+        let hash: string = createHash('sha256').update(password).digest('hex')
+        this.dbHandler.createAddress(id, hash)
 
-        return this.response(`created new address '${data.id}'`)
+        return this.response(`created new address '${id}'`)
     }
 
     async updateAddress(data: UpdateObject, jwt: any): Promise<EndpointReturnObject> {
