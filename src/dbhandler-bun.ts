@@ -35,37 +35,38 @@ class BunDbHandler implements DbHandlerInterface {
 
     retrieveAddress(id: string): AddressDbSet | null {
 
-        let db_result = this.db.query("SELECT * FROM addresses WHERE id = ?").get(id);
-        if (db_result == null) return null
+        let dbResult = this.db.query("SELECT * FROM addresses WHERE id = ?").get(id);
+        if (dbResult == null) return null
 
         return {
-            id: db_result.id,
-            passwordHash: db_result.password_hash,
-            ipAddress: db_result.ip_address
+            id: dbResult.id,
+            passwordHash: dbResult.password_hash,
+            ipAddress: dbResult.ip_address,
+            last_update: dbResult.last_update
         };
     }
 
     createAddress(id: string, passwordHash: string): boolean {
 
         try {
-            this.db.run("INSERT INTO addresses (id, password_hash, ip_address) VALUES (?, ?, '')", id, passwordHash);
+            this.db.run("INSERT INTO addresses (id, password_hash, ip_address, last_update) VALUES (?, ?, '', -1)", id, passwordHash);
         } catch (error) {
             return false
         }
         return true
     }
 
-    updateAddress(id: string, ip_address: string): boolean {
+    updateAddress(id: string, ip_address: string, timestamp: number): boolean {
 
         const queryStmt = this.db.query("SELECT * FROM addresses WHERE id = ?")
         if (queryStmt.get(id) === null) return false
 
-        this.db.run("UPDATE addresses SET ip_address = (?) WHERE id = (?)", ip_address, id);
+        this.db.run("UPDATE addresses SET ip_address = ?, last_update = ? WHERE id = ?", ip_address, timestamp.toString(), id);
         return true
     }
 
     private initDb(): void {
-        this.db.run("CREATE TABLE IF NOT EXISTS addresses (id TEXT PRIMARY KEY NOT NULL UNIQUE, password_hash TEXT, ip_address TEXT)")
+        this.db.run("CREATE TABLE IF NOT EXISTS addresses (id TEXT PRIMARY KEY NOT NULL UNIQUE, password_hash TEXT, ip_address TEXT, last_update INTEGER)")
     }
 
     private fillDb(): void {

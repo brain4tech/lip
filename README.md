@@ -16,11 +16,15 @@ It's ...
 - [Missing features and ToDo's](#missing-features-and-todos)
 - [A bit on the Why's](#a-bit-on-the-whys)
 - [About internal architectures and made decisions](#about-internal-architectures-and-made-decisions)
-- [API documentation](#api-documentation)
-  - [`/` (GET)](#-get)
-  - [`/create`](#create)
-  - [`/update`](#update)
-  - [`/retrieve`](#retrieve)
+- [Documentation](#documentation)
+  - [Authentication methods](#authentication-methods)
+  - [API endpoint reference](#api-endpoint-reference)
+    - [`/` (GET)](#-get)
+    - [`/create`](#create)
+    - [`/update`](#update)
+    - [`/retrieve`](#retrieve)
+    - [`/jwt`](#jwt)
+    - [`/invalidatejwt`](#invalidatejwt)
 
 
 ## How to use it
@@ -43,9 +47,10 @@ And you are good to go. *localip-pub* creates a new SQLite database called `db.s
 Currently there are several features missing for the project to be "completed":
 
 -  [x] protect reading/writing id's using passwords
--  [ ] use JWTs for regular address updating
--  [ ] use bcrypt password hashing instead of sha256 for improved security
--  [ ] set lifetime of an id to free id after usage (infinite should also be possible)
+-  [x] use JWTs for regular address updating
+-  [x] add jwt requiring cooldown + modify jwt expire date
+-  [ ] use bcrypt password hashing instead of sha256 for improved security and/or password salting
+-  [ ] ad lifetime for id to free it after certain amount of time (infinite should also be possible)
 -  [ ] overview on existing id's and their lifetime
 -  [ ] easy deployment with docker and docker compose
 -  [ ] some documentation in the source code
@@ -53,7 +58,7 @@ Currently there are several features missing for the project to be "completed":
 Possible features for post project completion could be:
 - a password reset feature, connected to an email
 - multiple sdk implementations for both publishing and retrieving ip addresses
-
+- multiplattform cli for application usage from the command line
 
 ## A bit on the Why's
 Basically *localip-sub* is a text-sharing application, where each text is secured with a pre-known id and password. So when starting a "server" and "client" that should communicate, but are unable to find each other (because of e.g. outer restrictions), they can use the set id and password to publish and retrieve the correct ip addresses.
@@ -67,25 +72,53 @@ A tangible example would be a server on a local machine and a web application th
 ## About internal architectures and made decisions
 > ToDo
 
-## API documentation
+## Documentation
 
+### Authentication methods
+
+**TLDR;**
+- password authentication with `id` and `password` is always possible, but more resource intensive
+- for regular ip address updates and retrieves, use JWTs
+- get a JWT at [`/jwt`](#jwt) by providing credential and a token mode
+- possible token modes are *read* (only usable at [`/retrieve`](#retrieve)) and *write* (only usable at [`/update`](#update))
+- tokens expire after 6 minutes
+- when a *write*-token for an id was acquired, the id can only get updated with the token, not normal credentials
+- the creation of *read*-tokens is limited to 6 tokens per minute
+- *write*-tokens should be invalidated after usage
+
+When creating a new id, you'll be required to define a password. This is to protect the stored ip from being changed by someone unauthorized. This means that you need to add your credentials for each update an retrieval. This is no problem when updating/retrieving the ip *once*, but as soon as you are planning to update/retrieve the ip regularly, you'll be better using a JWT.
+
+JWTs are an alternate way of authentication. Instead of adding the id and password with every request, you simply add the JWT. By authenticating only once and proving that you already are authenticated by delivering the token, the system skips the (resource intensive) step of hashing and comparing passwords. You'll be able to update and retrieve ip addresses faster.
+
+To create a JWT, use the [`/jwt`](#jwt) endpoint. Authenticate with id and password, and set a JWt mode. There are two available modes: *read* and *write*. *read*-tokens can only be used at [`/retrieve`](#retrieve), and *write*-tokens can only be used at [`/update`](#update). In addition, a *write*-token can be generated only once per id, while there are "infinite" *read*-tokens. Once a *write*-token has been generated, the id can only be updated through the valid jwt. Tokens last for 6 minutes. 
+
+*read*-tokens stay valid over multiple application restarts, while *write*-tokens need to be created after every restart. To invalidate all existing tokens, modify the JWT secret.
+
+### API endpoint reference
 Some general things to consider, before going into the details:
 - less is more. *localip-pub* tries to minify the amount of endpoints. If not specified, all endpoints are `POST`.
-- JSON is the only supported body content type. Make sure to set the `Content-Type`-header to `application/json`, else the application won't work and you'll receive a `400` status code
+- JSON is the only supported body content type. Make sure to set the `Content-Type`-header to `application/json`, else the application won't work and you'll receive a non-`200` status code
+- you'll always get a meaningful status code and response JSON `{"info": "<info here>"}` (specified per endpoint)
+- `info` always contains some information in case of an error, `200`'s don't contain more information except when specified
 
-Speaking of return values, you'll always get a meaningful status code and response JSON `{"info": "<info here>"}`, which are specified per endpoint below. The info always contains a string in case an error code occurs, `200`'s don't contain more information except when specified.
+The return JSON examples below are only returned on code `200`.
 
 ---
 
-### `/` (GET)
+#### `/` (GET)
 *Check service availability.*
 
 **Returns:**
+```json
+{
+    "info": "hello localip-pub"
+}
+```
 - `200`, `info` contains 'hello localip-pub'
 
 ---
 
-### `/create`
+#### `/create`
 *Creates a new id to store an ip address.*
 
 **Requires:**
@@ -97,43 +130,133 @@ Speaking of return values, you'll always get a meaningful status code and respon
 ```
 
 **Returns:**
+```json
+{
+    "info": "created new address '<new_id>'"
+}
+```
 - `200` on a successful id creation
 - `409` if the id already exists
 
 ---
 
-### `/update`
+#### `/update`
 *Updates an id.*
 
 **Requires:**
 ```json
+// password authentication
 {
     "id": "<id>",
     "password": "<password>",
     "ip_address": "<ip address>"
 }
-```
+``` 
 
-**Returns:**
-- `200` on a successful update
-- `400` if the passed ip address is not an ip address (both IPv4 and IPv6 are supported)
-- `401` if id and password do not match
-
----
-
-### `/retrieve`
-*Gets the ip address to an id.*
-
-**Requires:**
 ```json
+// jwt authentication (write)
 {
-    "id": "<id>",
-    "password": "<password>"
+    "jwt": "<jwt>",
+    "ip_address": "<ip address>"
 }
 ```
 
 **Returns:**
-- `200` on a successful update, `info` contains the ip address
-- `401` if id and password do not match
+```json
+{
+    "info": "",
+    "last_update": timestamp    // integer
+}
+```
+
+- `200` on a successful update
+- `400` invalid JSON object, invalid ip address
+- `401` invalid authentication (id does not exist, wrong password, invalid jwt, wrong jwt mode)
+
+---
+
+#### `/retrieve`
+*Gets the ip address to an id.*
+
+**Requires:**
+```json
+// password authentication
+{
+    "id": "<id>",
+    "password": "<password>",
+}
+``` 
+
+```json
+// jwt authentication (read)
+{
+    "jwt": "<jwt>",
+}
+```
+
+**Returns:**
+```json
+{
+    "info": "<ip address>",
+    "last_update": timestamp    // integer
+}
+```
+
+- `200` on a successful update
+- `400` invalid JSON object
+- `401` invalid authentication (id does not exist, wrong password, invalid jwt, wrong jwt mode)
+
+---
+
+#### `/jwt`
+*Get a JWT for easier long-term updating/retrieving.*
+
+**Requires:**
+```json
+// password authentication
+{
+    "id": "<id>",
+    "password": "<password>",
+    "mode": "<mode>"
+}
+``` 
+
+**Returns:**
+```json
+{
+    "info": "<jwt>"
+}
+```
+
+- `200` successful jwt generation
+- `400` invalid/unknown mode
+- `401` invalid authentication
+- `409` write jwt for id already exists
+
+---
+
+#### `/invalidatejwt`
+*Invalidates a JWT for updating an id.*
+
+**Requires:**
+```json
+// password authentication
+{
+    "id": "<id>",
+    "password": "<password>",
+    "jwt": "<mode>"
+}
+``` 
+
+**Returns:**
+```json
+{
+    "info": ""
+}
+```
+
+- `200` successful jwt invalidation
+- `400` jwt invalid, wrong token mode
+- `401` invalid authentication
 
 ---

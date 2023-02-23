@@ -6,8 +6,10 @@
     "dev": "bun run --hot src/index.ts"
   },
   "dependencies": {
+    "@elysiajs/jwt": "^0.2.1",
     "@types/node": "^18.14.0",
-    "elysia": "latest"
+    "elysia": "latest",
+    "limiter": "^2.1.0"
   },
   "devDependencies": {
     "bun-types": "latest"
