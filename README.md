@@ -21,9 +21,10 @@ It's ...
   - [API endpoint reference](#api-endpoint-reference)
     - [`/` (GET)](#-get)
     - [`/create`](#create)
-    - [`/jwt`](#jwt)
     - [`/update`](#update)
     - [`/retrieve`](#retrieve)
+    - [`/jwt`](#jwt)
+    - [`/invalidatejwt`](#invalidatejwt)
 
 
 ## How to use it
@@ -83,6 +84,7 @@ A tangible example would be a server on a local machine and a web application th
 - tokens expire after 6 minutes
 - when a *write*-token for an id was acquired, the id can only get updated with the token, not normal credentials
 - the creation of *read*-tokens is limited to 6 tokens per minute
+- *write*-tokens should be invalidated after usage
 
 When creating a new id, you'll be required to define a password. This is to protect the stored ip from being changed by someone unauthorized. This means that you need to add your credentials for each update an retrieval. This is no problem when updating/retrieving the ip *once*, but as soon as you are planning to update/retrieve the ip regularly, you'll be better using a JWT.
 
@@ -135,33 +137,6 @@ The return JSON examples below are only returned on code `200`.
 ```
 - `200` on a successful id creation
 - `409` if the id already exists
-
----
-
-#### `/jwt`
-*Get a JWT for easier long-term updating/retrieving.*
-
-**Requires:**
-```json
-// password authentication
-{
-    "id": "<id>",
-    "password": "<password>",
-    "mode": "<mode>"
-}
-``` 
-
-**Returns:**
-```json
-{
-    "info": "<jwt>"
-}
-```
-
-- `200` successful jwt generation
-- `400` invalid/unknown mode
-- `401` invalid authentication
-- `409` write jwt for id already exists
 
 ---
 
@@ -230,5 +205,58 @@ The return JSON examples below are only returned on code `200`.
 - `200` on a successful update
 - `400` invalid JSON object
 - `401` invalid authentication (id does not exist, wrong password, invalid jwt, wrong jwt mode)
+
+---
+
+#### `/jwt`
+*Get a JWT for easier long-term updating/retrieving.*
+
+**Requires:**
+```json
+// password authentication
+{
+    "id": "<id>",
+    "password": "<password>",
+    "mode": "<mode>"
+}
+``` 
+
+**Returns:**
+```json
+{
+    "info": "<jwt>"
+}
+```
+
+- `200` successful jwt generation
+- `400` invalid/unknown mode
+- `401` invalid authentication
+- `409` write jwt for id already exists
+
+---
+
+#### `/invalidatejwt`
+*Invalidates a JWT for updating an id.*
+
+**Requires:**
+```json
+// password authentication
+{
+    "id": "<id>",
+    "password": "<password>",
+    "jwt": "<mode>"
+}
+``` 
+
+**Returns:**
+```json
+{
+    "info": ""
+}
+```
+
+- `200` successful jwt invalidation
+- `400` jwt invalid, wrong token mode
+- `401` invalid authentication
 
 ---

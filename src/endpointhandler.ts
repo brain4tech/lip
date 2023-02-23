@@ -9,7 +9,8 @@ import {
     UpdateObject,
     JWTAcquiringObject,
     JWTPayload,
-    AuthReturnObject
+    AuthReturnObject,
+    JWTInvalidationObject
 } from "./interfaces"
 import {isIP} from "net"
 import { createHash } from "crypto"
@@ -135,6 +136,11 @@ class EndpointHandler {
             return this.response("invalid authentication", 401)
         }
 
+        // if write token is valid, but not in write mapping
+        if (!this.writeJWTs.has(authenticated.id)){
+            return this.response("invalid authentication", 401)
+        }
+
         // only allow modification with jwt if jwt for id exists
         if (data.id && this.writeJWTs.has(authenticated.id)){
             return this.response("modification with credentials not allowed when jwt exists", 409)
@@ -183,6 +189,41 @@ class EndpointHandler {
 
         return this.response(token)
     }
+
+    async invalidateJWT(data: JWTInvalidationObject, jwt: any): Promise<EndpointReturnObject>{
+
+        // check if correct id and password
+        if (!this.authId(data.id, data.password)){
+            return this.response("invalid authentication", 401)
+        }
+
+        // check if jwt is valid
+        const token: JWTPayload = await jwt.verify(data.jwt)
+
+        // jwt already invalid (due to time or non-existance)
+        if (!token){
+            return this.response("jwt already invalid", 400)
+        }
+
+        // id in jwt does not match credential id
+        if (token.id !== data.id){
+            return this.response("invalid authentication", 401)
+        }
+
+        // jwt token mode is invalid
+        if (token.mode !== 'write'){
+            return this.response("jwt already invalid", 400)
+        }
+
+        if (!this.writeJWTs.has(token.id)){
+            return this.response("jwt already invalid", 400)
+        }
+
+        this.writeJWTs.delete(token.id)
+        return this.response()
+    }
+
+
 
     private authId(id: string, password: string): boolean {
         // check if id exists

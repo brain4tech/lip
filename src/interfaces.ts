@@ -1,6 +1,6 @@
 export {DbHandlerInterface, AddressDbSet}
 export {RetrieveObject, CreateObject, UpdateObject}
-export {JWTAcquiringObject, JWTPayload}
+export {JWTAcquiringObject, JWTInvalidationObject, JWTPayload}
 export {AuthObject, AuthReturnObject}
 export {EndpointReturnObject}
 
@@ -36,6 +36,12 @@ type JWTAcquiringObject = {
     id: string
     password: string
     mode: string
+}
+
+type JWTInvalidationObject = {
+    id: string
+    password: string
+    jwt: string
 }
 
 type JWTPayload = {

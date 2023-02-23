@@ -7,7 +7,7 @@ app.use(
     jwt({
         name: 'jwt',
         secret: 'LOCALIP_PUB_JWT_SECRET',
-        exp: '15s'
+        exp: '6m'
     })
 )
 let endpointHandler = new EndpointHandler()
@@ -97,6 +97,25 @@ app.post('/jwt', async ({body, set, jwt}) => {
             id: t.String(),
             password: t.String(),
             mode: t.String()
+        }),
+        response: t.Object({
+            info: t.String()
+        })
+    }
+})
+
+// invalidate jwt in write mode
+app.post('/invalidatejwt', async ({body, set, jwt}) => {
+    const returnObject = await endpointHandler.invalidateJWT(body, jwt)
+    set.status = returnObject.code
+    return returnObject.return
+},
+{
+    schema: {
+        body: t.Object({
+            id: t.String(),
+            password: t.String(),
+            jwt: t.String()
         }),
         response: t.Object({
             info: t.String()
