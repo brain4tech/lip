@@ -2,11 +2,14 @@ import Elysia, {t} from 'elysia'
 import { jwt } from '@elysiajs/jwt'
 import {EndpointHandler} from './endpointhandler'
 
+let jwtSecret: string | undefined = Bun.env['LOCALIP_PUB_JWT_SECRET']
+jwtSecret = ((jwtSecret === undefined) ? 'g0hZu73c7IpUJUViMJtRkvdVU8pf7tqCCaVisfJK' : jwtSecret)
+
 const app = new Elysia()
 app.use(
     jwt({
         name: 'jwt',
-        secret: 'LOCALIP_PUB_JWT_SECRET',
+        secret: jwtSecret,
         exp: '6m'
     })
 )
@@ -147,5 +150,5 @@ app.onError(({code, set, error}) => {
     return ''
 })
 
-app.listen(3000)
+app.listen(8080)
 console.log(`localip-pub running at ${app.server?.hostname}:${app.server?.port}`)
