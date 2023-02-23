@@ -47,7 +47,7 @@ Currently there are several features missing for the project to be "completed":
 
 -  [x] protect reading/writing id's using passwords
 -  [x] use JWTs for regular address updating
--  [ ] add jwt requiring cooldown + modify jwt expire date
+-  [x] add jwt requiring cooldown + modify jwt expire date
 -  [ ] use bcrypt password hashing instead of sha256 for improved security and/or password salting
 -  [ ] ad lifetime for id to free it after certain amount of time (infinite should also be possible)
 -  [ ] overview on existing id's and their lifetime
@@ -57,6 +57,7 @@ Currently there are several features missing for the project to be "completed":
 Possible features for post project completion could be:
 - a password reset feature, connected to an email
 - multiple sdk implementations for both publishing and retrieving ip addresses
+- multiplattform cli for application usage from the command line
 
 ## A bit on the Why's
 Basically *localip-sub* is a text-sharing application, where each text is secured with a pre-known id and password. So when starting a "server" and "client" that should communicate, but are unable to find each other (because of e.g. outer restrictions), they can use the set id and password to publish and retrieve the correct ip addresses.
@@ -79,13 +80,15 @@ A tangible example would be a server on a local machine and a web application th
 - for regular ip address updates and retrieves, use JWTs
 - get a JWT at [`/jwt`](#jwt) by providing credential and a token mode
 - possible token modes are *read* (only usable at [`/retrieve`](#retrieve)) and *write* (only usable at [`/update`](#update))
-- tokens last for 6 minutes
+- tokens expire after 6 minutes
+- when a *write*-token for an id was acquired, the id can only get updated with the token, not normal credentials
+- the creation of *read*-tokens is limited to 6 tokens per minute
 
 When creating a new id, you'll be required to define a password. This is to protect the stored ip from being changed by someone unauthorized. This means that you need to add your credentials for each update an retrieval. This is no problem when updating/retrieving the ip *once*, but as soon as you are planning to update/retrieve the ip regularly, you'll be better using a JWT.
 
 JWTs are an alternate way of authentication. Instead of adding the id and password with every request, you simply add the JWT. By authenticating only once and proving that you already are authenticated by delivering the token, the system skips the (resource intensive) step of hashing and comparing passwords. You'll be able to update and retrieve ip addresses faster.
 
-To create a JWT, use the [`/jwt`](#jwt) endpoint. Authenticate with id and password, and set a JWt mode. There are two available modes: *read* and *write*. *read*-tokens can only be used at [`/retrieve`](#retrieve), and *write*-tokens can only be used at [`/update`](#update). In addition, only one *write*-token can be generated, while there are "infinite" *read*-tokens. Tokens last for 6 minutes.
+To create a JWT, use the [`/jwt`](#jwt) endpoint. Authenticate with id and password, and set a JWt mode. There are two available modes: *read* and *write*. *read*-tokens can only be used at [`/retrieve`](#retrieve), and *write*-tokens can only be used at [`/update`](#update). In addition, a *write*-token can be generated only once per id, while there are "infinite" *read*-tokens. Once a *write*-token has been generated, the id can only be updated through the valid jwt. Tokens last for 6 minutes. 
 
 *read*-tokens stay valid over multiple application restarts, while *write*-tokens need to be created after every restart. To invalidate all existing tokens, modify the JWT secret.
 

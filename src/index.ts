@@ -7,7 +7,7 @@ app.use(
     jwt({
         name: 'jwt',
         secret: 'LOCALIP_PUB_JWT_SECRET',
-        exp: '6m'
+        exp: '15s'
     })
 )
 let endpointHandler = new EndpointHandler()

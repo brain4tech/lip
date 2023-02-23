@@ -13,16 +13,19 @@ import {
 } from "./interfaces"
 import {isIP} from "net"
 import { createHash } from "crypto"
+import { RateLimiter } from "limiter"
 
 export {EndpointHandler}
 
 class EndpointHandler {
     private dbHandler: DbHandlerInterface
     private writeJWTs: Map<string, string>
+    private genReadTokensLimiter: RateLimiter
 
     constructor() {
         this.dbHandler = new BunDbHandler()
         this.writeJWTs = new Map<string, string>()
+        this.genReadTokensLimiter = new RateLimiter({tokensPerInterval: 6, interval: 'minute', fireImmediately: true})
 
         if (!this.dbHandler.initSuccessful()) {
             throw new Error("Failed to initialize database.")
@@ -106,7 +109,20 @@ class EndpointHandler {
             let message: string = ""
             switch (authenticated.code){
                 case 1: message = "invalid authentication"; break;
-                case 2: message = "invalid authentication"; break;
+                case 2: {
+
+                    // case 2 --> invalid jwt
+                    let keyToDelete: string | null = null
+                    this.writeJWTs.forEach(
+                        (value: string, key: string) => {
+                            if (value === data.jwt) keyToDelete = key
+                        }
+                    )
+
+                    if (keyToDelete) this.writeJWTs.delete(keyToDelete)                    
+                    message = "invalid authentication"
+                    break
+                }
                 case 3: message = "invalid token mode"; break;
                 case 4: message = "no form of authentication given"; break;
                 default: message = "invalid authentication"; break;
@@ -117,6 +133,11 @@ class EndpointHandler {
 
         if (!authenticated.id){
             return this.response("invalid authentication", 401)
+        }
+
+        // only allow modification with jwt if jwt for id exists
+        if (data.id && this.writeJWTs.has(authenticated.id)){
+            return this.response("modification with credentials not allowed when jwt exists", 409)
         }
 
         const updateTime = Date.now()
@@ -136,6 +157,12 @@ class EndpointHandler {
 
         if (!this.authId(data.id, data.password)){
             return this.response("invalid combination of id and password", 401)
+        }
+
+        // set rate limiter for acquiring read tokens
+        if (data.mode === 'read'){
+            const remainingRequests: number = await this.genReadTokensLimiter.removeTokens(1)
+            if (remainingRequests < 0) return this.response("too many acquiring requests", 429)
         }
 
         // prevent multiple write tokens
