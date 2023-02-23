@@ -103,8 +103,8 @@ Currently there are several features missing for the project to be "completed":
 -  [ ] use bcrypt password hashing instead of sha256 for improved security and/or password salting
 -  [ ] ad lifetime for id to free it after certain amount of time (infinite should also be possible)
 -  [ ] overview on existing id's and their lifetime
--  [ ] easy deployment with docker and docker compose
--  [ ] some documentation in the source code
+-  [x] easy deployment with docker and docker compose
+-  [ ] source code documentation
 
 Possible features for post project completion could be:
 - a password reset feature, connected to an email
