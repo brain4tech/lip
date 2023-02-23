@@ -48,8 +48,8 @@ Currently there are several features missing for the project to be "completed":
 -  [x] protect reading/writing id's using passwords
 -  [x] use JWTs for regular address updating
 -  [ ] add jwt requiring cooldown + modify jwt expire date
--  [ ] use bcrypt password hashing instead of sha256 for improved security
--  [ ] set lifetime of an id to free id after usage (infinite should also be possible)
+-  [ ] use bcrypt password hashing instead of sha256 for improved security and/or password salting
+-  [ ] ad lifetime for id to free it after certain amount of time (infinite should also be possible)
 -  [ ] overview on existing id's and their lifetime
 -  [ ] easy deployment with docker and docker compose
 -  [ ] some documentation in the source code
