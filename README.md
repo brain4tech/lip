@@ -22,7 +22,9 @@ It's ...
 - [A bit on the Why's](#a-bit-on-the-whys)
 - [About internal architectures and made decisions](#about-internal-architectures-and-made-decisions)
 - [Documentation](#documentation)
-  - [Authentication methods](#authentication-methods)
+  - [Concepts](#concepts)
+    - [Authentication methods](#authentication-methods)
+    - [Lifetimes](#lifetimes)
   - [API endpoint reference](#api-endpoint-reference)
     - [`/` (GET)](#-get)
     - [`/create`](#create)
@@ -126,7 +128,8 @@ A tangible example would be a server on a local machine and a web application th
 
 ## Documentation
 
-### Authentication methods
+### Concepts
+#### Authentication methods
 
 **TLDR;**
 - password authentication with `id` and `password` is always possible, but more resource intensive
@@ -148,6 +151,11 @@ To create a JWT, use the [`/jwt`](#jwt) endpoint. Authenticate with id and passw
 *read*-tokens stay valid over multiple application restarts, while *write*-tokens need to be created after every restart. To invalidate all existing tokens, modify the JWT secret. It should be best practice to invalidate *write*-tokens after usage. This happens automatically after 6 minutes, but during this time no other *write*-token can be created.
 
 When deleting an id `a` and recreating it (`a'`), all existing JWTs for `a` will not work for `a'`. This ensures that JWTs must be generated for every "new" id.
+
+#### Lifetimes
+Each token can have a lifetime, measured in seconds. It can be set and updated to everything between -1 and 31536000 (one year). `-1` stands for inifinte, `0` for a token deletion within the next second.
+
+Token lifetimes are calculated lazily and thus deleted at the next access.
 
 ### API endpoint reference
 Some general things to consider, before going into the details:
@@ -180,7 +188,8 @@ The return JSON examples below are only returned on code `200`.
 ```json
 {
     "id": "<new_id>",
-    "password": "<password>"
+    "password": "<password>",
+    "lifetime": seconds     number, optional
 }
 ```
 
@@ -204,7 +213,8 @@ The return JSON examples below are only returned on code `200`.
 {
     "id": "<id>",
     "password": "<password>",
-    "ip_address": "<ip address>"
+    "ip_address": "<ip address>",
+    "lifetime": seconds     number, optional
 }
 ``` 
 
@@ -213,6 +223,7 @@ The return JSON examples below are only returned on code `200`.
 {
     "jwt": "<jwt>",
     "ip_address": "<ip address>"
+    "lifetime": seconds     number, optional
 }
 ```
 
@@ -253,7 +264,8 @@ The return JSON examples below are only returned on code `200`.
 ```json
 {
     "info": "<ip address>",
-    "last_update": timestamp    // integer
+    "last_update": timestamp,   // integer
+    "lifetime": timestamp       // integer
 }
 ```
 

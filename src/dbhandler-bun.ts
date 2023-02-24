@@ -42,26 +42,32 @@ class BunDbHandler implements DbHandlerInterface {
             passwordHash: dbResult.password_hash,
             ipAddress: dbResult.ip_address,
             createdOn: dbResult.created_on,
-            lastUpdate: dbResult.last_update
+            lastUpdate: dbResult.last_update,
+            lifetime: dbResult.lifetime
         };
     }
 
-    createAddress(id: string, passwordHash: string, createdOn: number): boolean {
+    createAddress(id: string, passwordHash: string, createdOn: number, lifetime: number = -1): boolean {
 
         try {
-            this.db.run("INSERT INTO addresses (id, password_hash, ip_address, created_on, last_update) VALUES (?, ?, '', ?, -1)", id, passwordHash, createdOn.toString());
+            this.db.run("INSERT INTO addresses (id, password_hash, ip_address, created_on, last_update, lifetime) VALUES (?, ?, '', ?, -1, ?)", id, passwordHash, createdOn.toString(), lifetime.toString());
         } catch (error) {
             return false
         }
         return true
     }
 
-    updateAddress(id: string, ip_address: string, timestamp: number): boolean {
+    updateAddress(id: string, ip_address: string, timestamp: number, lifetime: number | null): boolean {
 
         const queryStmt = this.db.query("SELECT * FROM addresses WHERE id = ?")
         if (queryStmt.get(id) === null) return false
 
-        this.db.run("UPDATE addresses SET ip_address = ?, last_update = ? WHERE id = ?", ip_address, timestamp.toString(), id);
+        if (lifetime) {
+            this.db.run("UPDATE addresses SET ip_address = ?, last_update = ?, lifetime = ? WHERE id = ?", ip_address, timestamp.toString(), lifetime.toString(), id);
+        } else {
+            this.db.run("UPDATE addresses SET ip_address = ?, last_update = ? WHERE id = ?", ip_address, timestamp.toString(), id);
+        }
+
         return true
     }
 
@@ -75,7 +81,7 @@ class BunDbHandler implements DbHandlerInterface {
     }
 
     private initDb(): void {
-        this.db.run("CREATE TABLE IF NOT EXISTS addresses (id TEXT PRIMARY KEY NOT NULL UNIQUE, password_hash TEXT, ip_address TEXT, created_on INTEGER, last_update INTEGER)")
+        this.db.run("CREATE TABLE IF NOT EXISTS addresses (id TEXT PRIMARY KEY NOT NULL UNIQUE, password_hash TEXT, ip_address TEXT, created_on INTEGER, last_update INTEGER, lifetime INTEGER)")
     }
 
     private fillDb(): void {

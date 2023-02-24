@@ -34,12 +34,13 @@ app.post('/retrieve', async ({body, set, jwt}) => {
                     }),
                     t.Object({
                         jwt: t.String()
-                    })
+                    }),
                 ]
             ),
             response: t.Object({
                 info: t.String(),
-                last_update: t.Optional(t.Number())
+                last_update: t.Optional(t.Number()),
+                lifetime: t.Optional(t.Number())
             })
         }
     })
@@ -54,7 +55,8 @@ app.post('/create', ({body, set}) => {
         schema: {
             body: t.Object({
                 id: t.String(),
-                password: t.String()
+                password: t.String(),
+                lifetime: t.Optional(t.Number())
             }),
             response: t.Object({
                 info: t.String()
@@ -78,6 +80,10 @@ app.post('/update', async ({body, set, jwt}) => {
                     }),
                     t.Object({
                         jwt: t.String()
+                    }),
+                    t.Object({
+                        ip_address: t.String(),
+                        lifetime: t.Optional(t.Number())
                     })
                 ]
             ),

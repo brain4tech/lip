@@ -10,7 +10,9 @@ type AddressDbSet = {
     ipAddress: string
     createdOn: number
     lastUpdate: number
+    lifetime: number
 }
+
 type AuthObject =  {
     id?: string
     password?: string
@@ -27,10 +29,12 @@ type RetrieveObject = AuthObject
 type CreateObject = {
     id: string
     password: string
+    lifetime?: number | undefined
 }
 
 type UpdateObject = AuthObject & {
     ip_address: string
+    lifetime?: number | undefined
 }
 
 type JWTAcquiringObject = {
@@ -55,6 +59,7 @@ type EndpointReturnObject = {
     return: {
         info: string
         last_update?: number
+        lifetime?: number
     }
     code: number
 }
@@ -64,9 +69,9 @@ interface DbHandlerInterface {
 
     retrieveAddress(id: string): AddressDbSet | null
 
-    createAddress(id: string, passwordHash: string, createdOn: number): boolean
+    createAddress(id: string, passwordHash: string, createdOn: number, lifetime?: number): boolean
 
-    updateAddress(id: string, ip_address: string, timestamp: number): boolean
+    updateAddress(id: string, ip_address: string, timestamp: number, lifetime?: number | null): boolean
 
     deleteAddress(id: string): boolean
 }

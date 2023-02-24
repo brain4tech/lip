@@ -51,6 +51,7 @@ class EndpointHandler {
                 case 4: message = "invalid token mode"; break;
                 case 5: message = "invalid authentication"; break;
                 case 6: message = "invalid authentication"; break;
+                case 7: message = "invalid authentication"; break;
                 default: message = "invalid authentication"; break;
             }
 
@@ -68,6 +69,7 @@ class EndpointHandler {
 
         let returnObject: EndpointReturnObject = this.response(ipAddress.ipAddress)
         returnObject.return.last_update = ipAddress.lastUpdate
+        returnObject.return.lifetime = ipAddress.lifetime
         return returnObject
     }
 
@@ -75,6 +77,7 @@ class EndpointHandler {
 
         let id: string = data.id.trim()
         let password: string = data.password.trim()
+        let lifetime: number = -1
         
         // TODO validate id (allowed letters, whitespaces, ...)
         if (id === '') return this.response("id cannot be emtpy", 400)
@@ -82,15 +85,29 @@ class EndpointHandler {
         // validate password
         if (password === '') return this.response("password cannot be emtpy", 400)
 
+        // validate lifetime
+        if (data.lifetime){
+            if (!this.checkLifetimeNumber(data.lifetime)) return this.response("invalid lifetime setting", 400)
+            lifetime = Math.floor(Date.now() / 1000) + data.lifetime
+        }
+
         // check if id already exists to prevent unneccessary calculations
         const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(id)
         if (ipAddress != null) {
-            return this.response("id already exists", 409)
+
+            // lifetime is infinite
+            if (ipAddress.lifetime == -1) return this.response("id already exists", 409)
+
+            // lifetime is finite but not exceeded
+            if (Math.floor(Date.now() / 1000) <  ipAddress.lifetime) return this.response("id already exists", 409)
+
+            // lifetimeis exceeded
+            this.dbHandler.deleteAddress(ipAddress.id)
         }
 
         // calculate password hashes and store in db
         let hash: string = createHash('sha256').update(password).digest('hex')
-        this.dbHandler.createAddress(id, hash, Date.now())
+        this.dbHandler.createAddress(id, hash, Date.now(), lifetime)
 
         return this.response(`created new address '${id}'`)
     }
@@ -105,6 +122,13 @@ class EndpointHandler {
 
         if (isIP(data.ip_address) == 0) {
             return this.response("invalid ip address", 400)
+        }
+
+        // validate lifetime
+        let newLifetime: number | null = null
+        if (data.lifetime){
+            if (!this.checkLifetimeNumber(data.lifetime)) return this.response("invalid lifetime setting", 400)
+            newLifetime = Math.floor(Date.now() / 1000) + data.lifetime
         }
 
         const authenticated = await this.authAuthObject(data, jwt, 'write')
@@ -130,6 +154,7 @@ class EndpointHandler {
                 case 4: message = "invalid token mode"; break;
                 case 5: message = "invalid authentication"; break;
                 case 6: message = "invalid authentication"; break;
+                case 7: message = "invalid authentication"; break;
                 default: message = "invalid authentication"; break;
             }
 
@@ -151,7 +176,7 @@ class EndpointHandler {
         }
 
         const updateTime = Date.now()
-        this.dbHandler.updateAddress(authenticated.id, data.ip_address, updateTime)
+        this.dbHandler.updateAddress(authenticated.id, data.ip_address, updateTime, newLifetime)
 
         let returnObject: EndpointReturnObject = this.response()
         returnObject.return.last_update = updateTime
@@ -257,6 +282,12 @@ class EndpointHandler {
             return false
         }
 
+        // address lifetime expired
+        if (ipAddress.lifetime != -1 && Math.floor(Date.now() / 1000) > ipAddress.lifetime){
+            this.dbHandler.deleteAddress(ipAddress.id)
+            return false
+        }
+
         return true
     }
 
@@ -346,6 +377,12 @@ class EndpointHandler {
             // date of token is before date of address (prevents token reuse on new ips with same id)
             if (address.createdOn > token.created_on) return {code: 6}
 
+            // address lifetime expired
+            if (address.lifetime != -1 && Math.floor(Date.now() / 1000) > address.lifetime){
+                this.dbHandler.deleteAddress(address.id)
+                return {code: 7}
+            }
+
             return {code: 0, id: token.id}
 
         }
@@ -354,10 +391,22 @@ class EndpointHandler {
         if (!authObject.id || !authObject.password) return {code: 1}
         
 
-        // authenticate with id and password
+        // authenticate with id and password / lifetime expired
         if (!this.authId(authObject.id, authObject.password)) return {code: 2}
 
         return {code: 0, id: authObject.id}
+    }
+
+    private checkLifetimeNumber(lifetime: number): boolean {
+
+        // below 'infinite' (-1)
+        if (lifetime < -1) return false
+
+        // more than one year
+        if (lifetime > 31536000) return false
+
+        return true
+
     }
 
     private response(message: string = "", code: number = 200): EndpointReturnObject {
