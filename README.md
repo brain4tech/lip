@@ -104,7 +104,7 @@ Currently there are several features missing for the project to be "completed":
 -  [x] use JWTs for regular address updating
 -  [x] add JWT requiring cooldown + modify JWT expire date
 -  [ ] use bcrypt password hashing instead of sha256 for improved security and/or password salting
--  [ ] ad lifetime for id to free it after certain amount of time (infinite should also be possible)
+-  [x] add lifetime for id to free it after certain amount of time (infinite should also be possible)
 -  [ ] overview on existing id's and their lifetime
 -  [x] easy deployment with docker and docker compose
 -  [ ] source code documentation
@@ -132,7 +132,7 @@ A tangible example would be a server on a local machine and a web application th
 #### Authentication
 
 **TLDR;**
-- when creating an ip, you'll need to specify an *access* and *master* password
+- when creating an ip at [`/create`](#create), you'll need to specify an *access* and *master* password
 - updating and retrieving ip addresses require a JWT
 - possible token modes are *read* (only usable at [`/retrieve`](#retrieve)) and *write* (only usable at [`/update`](#update))
 - get a JWT at [`/jwt`](#jwt) by providing credential and a token mode
