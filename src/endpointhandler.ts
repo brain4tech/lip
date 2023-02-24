@@ -45,10 +45,12 @@ class EndpointHandler {
         if (authenticated.code != 0){
             let message: string = ""
             switch (authenticated.code){
-                case 1: message = "invalid authentication"; break;
+                case 1: message = "no form of authentication given"; break;
                 case 2: message = "invalid authentication"; break;
-                case 3: message = "invalid token mode"; break;
-                case 4: message = "no form of authentication given"; break;
+                case 3: message = "invalid authentication"; break;
+                case 4: message = "invalid token mode"; break;
+                case 5: message = "invalid authentication"; break;
+                case 6: message = "invalid authentication"; break;
                 default: message = "invalid authentication"; break;
             }
 
@@ -65,7 +67,7 @@ class EndpointHandler {
         }
 
         let returnObject: EndpointReturnObject = this.response(ipAddress.ipAddress)
-        returnObject.return.last_update = ipAddress.last_update
+        returnObject.return.last_update = ipAddress.lastUpdate
         return returnObject
     }
 
@@ -88,7 +90,7 @@ class EndpointHandler {
 
         // calculate password hashes and store in db
         let hash: string = createHash('sha256').update(password).digest('hex')
-        this.dbHandler.createAddress(id, hash)
+        this.dbHandler.createAddress(id, hash, Date.now())
 
         return this.response(`created new address '${id}'`)
     }
@@ -109,8 +111,9 @@ class EndpointHandler {
         if (authenticated.code != 0){
             let message: string = ""
             switch (authenticated.code){
-                case 1: message = "invalid authentication"; break;
-                case 2: {
+                case 1: message = "no form of authentication given"; break;
+                case 2: message = "invalid authentication"; break;
+                case 3: {
 
                     // case 2 --> invalid jwt
                     let keyToDelete: string | null = null
@@ -124,8 +127,9 @@ class EndpointHandler {
                     message = "invalid authentication"
                     break
                 }
-                case 3: message = "invalid token mode"; break;
-                case 4: message = "no form of authentication given"; break;
+                case 4: message = "invalid token mode"; break;
+                case 5: message = "invalid authentication"; break;
+                case 6: message = "invalid authentication"; break;
                 default: message = "invalid authentication"; break;
             }
 
@@ -152,6 +156,21 @@ class EndpointHandler {
         let returnObject: EndpointReturnObject = this.response()
         returnObject.return.last_update = updateTime
         return returnObject
+    }
+
+    deleteAddress(data: CreateObject): EndpointReturnObject {
+
+        if (!this.authId(data.id, data.password)){
+            return this.response("invalid combination of id and password", 401)
+        }
+
+        // delete id from token mapping
+        if (this.writeJWTs.has(data.id)) this.writeJWTs.delete(data.id)
+
+        // delete id from db
+        this.dbHandler.deleteAddress(data.id)
+
+        return this.response(`deleted address '${data.id}'`)
     }
 
     async acquireJWT(data: JWTAcquiringObject, jwt: any): Promise<EndpointReturnObject>{
@@ -181,7 +200,7 @@ class EndpointHandler {
         }
 
         // generate jwt
-        const tokenPayload: JWTPayload = {id: data.id, mode: data.mode, timestamp: Date.now()}
+        const tokenPayload: JWTPayload = {id: data.id, mode: data.mode, created_on: Date.now()}
         const token: string = await jwt.sign(tokenPayload)
 
         // register write token
@@ -312,23 +331,31 @@ class EndpointHandler {
             const token: JWTPayload = await jwt.verify(authObject.jwt)
 
             if (!token){
-                return {code: 2}
+                return {code: 3}
             }
 
             if (token.mode !== requiredTokenMode){
-                return {code: 3}
+                return {code: 4}
             }
+
+            const address = this.dbHandler.retrieveAddress(token.id)
+            
+            // id in token does not exist
+            if (!address) return {code: 5}
+
+            // date of token is before date of address (prevents token reuse on new ips with same id)
+            if (address.createdOn > token.created_on) return {code: 6}
 
             return {code: 0, id: token.id}
 
         }
 
         // missing form of authentication
-        if (!authObject.id || !authObject.password) return {code: 4}
+        if (!authObject.id || !authObject.password) return {code: 1}
         
 
         // authenticate with id and password
-        if (!this.authId(authObject.id, authObject.password)) return {code: 1}
+        if (!this.authId(authObject.id, authObject.password)) return {code: 2}
 
         return {code: 0, id: authObject.id}
     }

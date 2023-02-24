@@ -88,6 +88,24 @@ app.post('/update', async ({body, set, jwt}) => {
         }
     })
 
+// delete an id
+app.post('/delete', async ({body, set}) => {
+    const returnObject = await endpointHandler.deleteAddress(body)
+    set.status = returnObject.code
+    return returnObject.return
+},
+{
+    schema: {
+        body: t.Object({
+            id: t.String(),
+            password: t.String()
+        }),
+        response: t.Object({
+            info: t.String()
+        })
+    }
+})
+
 // acquire jwt
 app.post('/jwt', async ({body, set, jwt}) => {
     const returnObject = await endpointHandler.acquireJWT(body, jwt)

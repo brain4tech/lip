@@ -8,7 +8,8 @@ type AddressDbSet = {
     id: string
     passwordHash: string
     ipAddress: string
-    last_update: number
+    createdOn: number
+    lastUpdate: number
 }
 type AuthObject =  {
     id?: string
@@ -47,7 +48,7 @@ type JWTInvalidationObject = {
 type JWTPayload = {
     id: string
     mode: string
-    timestamp: number
+    created_on: number
 }
 
 type EndpointReturnObject = {
@@ -63,7 +64,9 @@ interface DbHandlerInterface {
 
     retrieveAddress(id: string): AddressDbSet | null
 
-    createAddress(id: string, passwordHash: string): boolean
+    createAddress(id: string, passwordHash: string, createdOn: number): boolean
 
     updateAddress(id: string, ip_address: string, timestamp: number): boolean
+
+    deleteAddress(id: string): boolean
 }

@@ -41,14 +41,15 @@ class BunDbHandler implements DbHandlerInterface {
             id: dbResult.id,
             passwordHash: dbResult.password_hash,
             ipAddress: dbResult.ip_address,
-            last_update: dbResult.last_update
+            createdOn: dbResult.created_on,
+            lastUpdate: dbResult.last_update
         };
     }
 
-    createAddress(id: string, passwordHash: string): boolean {
+    createAddress(id: string, passwordHash: string, createdOn: number): boolean {
 
         try {
-            this.db.run("INSERT INTO addresses (id, password_hash, ip_address, last_update) VALUES (?, ?, '', -1)", id, passwordHash);
+            this.db.run("INSERT INTO addresses (id, password_hash, ip_address, created_on, last_update) VALUES (?, ?, '', ?, -1)", id, passwordHash, createdOn.toString());
         } catch (error) {
             return false
         }
@@ -64,8 +65,17 @@ class BunDbHandler implements DbHandlerInterface {
         return true
     }
 
+    deleteAddress(id: string): boolean {
+
+        const queryStmt = this.db.query("SELECT * FROM addresses WHERE id = ?")
+        if (queryStmt.get(id) === null) return false
+
+        this.db.run("DELETE FROM addresses WHERE id = ?", id);
+        return true
+    }
+
     private initDb(): void {
-        this.db.run("CREATE TABLE IF NOT EXISTS addresses (id TEXT PRIMARY KEY NOT NULL UNIQUE, password_hash TEXT, ip_address TEXT, last_update INTEGER)")
+        this.db.run("CREATE TABLE IF NOT EXISTS addresses (id TEXT PRIMARY KEY NOT NULL UNIQUE, password_hash TEXT, ip_address TEXT, created_on INTEGER, last_update INTEGER)")
     }
 
     private fillDb(): void {
