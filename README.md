@@ -23,7 +23,7 @@ It's ...
 - [About internal architectures and made decisions](#about-internal-architectures-and-made-decisions)
 - [Documentation](#documentation)
   - [Concepts](#concepts)
-    - [Authentication methods](#authentication-methods)
+    - [Authentication](#authentication)
     - [Lifetimes](#lifetimes)
   - [API endpoint reference](#api-endpoint-reference)
     - [`/` (GET)](#-get)
@@ -129,33 +129,32 @@ A tangible example would be a server on a local machine and a web application th
 ## Documentation
 
 ### Concepts
-#### Authentication methods
+#### Authentication
 
 **TLDR;**
-- password authentication with `id` and `password` is always possible, but more resource intensive
-- for regular ip address updates and retrieves, use JWTs
-- get a JWT at [`/jwt`](#jwt) by providing credential and a token mode
+- when creating an ip, you'll need to specify an *access* and *master* password
+- updating and retrieving ip addresses require a JWT
 - possible token modes are *read* (only usable at [`/retrieve`](#retrieve)) and *write* (only usable at [`/update`](#update))
+- get a JWT at [`/jwt`](#jwt) by providing credential and a token mode
+- JWTs can be acquired with *access* passwords only
 - tokens expire after 6 minutes
-- when a *write*-token for an id was acquired, the id can only get updated with the token, not normal credentials
-- the creation of *read*-tokens is limited to 6 tokens per minute
-- *write*-tokens should be invalidated after usage
-- when deleting an address, all existing tokens for that id won't be usable again, even if id is recreated afterwards
+- the creation of *read*-tokens is limited to 6 tokens per minute per id
+- *write*-tokens should be invalidated at [`/invalidatejwt`](#invalidatejwt) after usage
+- an ip can be deleted at [`/delete`](#delete) with the *master* password only
+- when deleting an ip, all existing tokens for that id won't be usable again, even if id is recreated afterwards
 
-When creating a new id, you'll be required to define a password. This is to protect the stored ip from being changed by someone unauthorized. This means that you need to add your credentials for each update an retrieval. This is no problem when updating/retrieving the ip *once*, but as soon as you are planning to update/retrieve the ip regularly, you'll be better using a JWT.
+When creating a new id, you'll be required to define two passwords. This is to protect the stored ip from being read, changed or deleted by unauthorized users. There are two types of passwords: *access* passwords and *master* passwords. While the *access* password can be shared with other clients/users, the *master* password should be kept internal. You cannot update or retrieve ip addresses with credentials. You'll need a JWT.
 
-JWTs are an alternate way of authentication. Instead of adding the id and password with every request, you simply add the JWT. By authenticating only once and proving that you already are authenticated by delivering the token, the system skips the (resource intensive) step of hashing and comparing passwords. You'll be able to update and retrieve ip addresses faster.
+To create a JWT, use the [`/jwt`](#jwt) endpoint. Authenticate with id and *access* password, and set a JWt mode. There are two available modes: *read* and *write*. *read*-tokens can only be used at [`/retrieve`](#retrieve), and *write*-tokens can only be used at [`/update`](#update). In addition, a *write*-token can be generated only once per id, while there are "infinite" *read*-tokens (rate limited to 6/minute per id). Once a *write*-token has been generated, the id can only be updated through the valid JWT. Tokens last for 6 minutes. 
 
-To create a JWT, use the [`/jwt`](#jwt) endpoint. Authenticate with id and password, and set a JWt mode. There are two available modes: *read* and *write*. *read*-tokens can only be used at [`/retrieve`](#retrieve), and *write*-tokens can only be used at [`/update`](#update). In addition, a *write*-token can be generated only once per id, while there are "infinite" *read*-tokens. Once a *write*-token has been generated, the id can only be updated through the valid JWT. Tokens last for 6 minutes. 
+*read*-tokens stay valid over multiple application restarts, while *write*-tokens need to be created after every restart. To invalidate all existing tokens, modify the JWT secret. It should be best practice to invalidate *write*-tokens at [`/invalidatejwt`](#invalidatejwt) after usage. This happens automatically after 6 minutes, but during this time, no other *write*-token can be created.
 
-*read*-tokens stay valid over multiple application restarts, while *write*-tokens need to be created after every restart. To invalidate all existing tokens, modify the JWT secret. It should be best practice to invalidate *write*-tokens after usage. This happens automatically after 6 minutes, but during this time no other *write*-token can be created.
-
-When deleting an id `a` and recreating it (`a'`), all existing JWTs for `a` will not work for `a'`. This ensures that JWTs must be generated for every "new" id.
+When deleting an id `a` and recreating it (`a'`), all existing JWTs for `a` will not work for `a'`. This ensures that JWTs must be generated for every "new" id. An id can be deleted at [`/delete`](#delete) using the *master* password.
 
 #### Lifetimes
-Each token can have a lifetime, measured in seconds. It can be set and updated to everything between -1 and 31536000 (one year). `-1` stands for inifinte, `0` for a token deletion within the next second.
+Each token can have a lifetime, measured in seconds. It can be set to everything between -1 and 31536000 (one year). `-1` stands for infinite, `0` for a token deletion within the next second. The lifetime is automatically refreshed with each token update.
 
-Token lifetimes are calculated lazily and thus deleted at the next access.
+Token lifetimes are evaluated lazily. Thus exceeded id are deleted on the next access attempt.
 
 ### API endpoint reference
 Some general things to consider, before going into the details:
@@ -188,8 +187,9 @@ The return JSON examples below are only returned on code `200`.
 ```json
 {
     "id": "<new_id>",
-    "password": "<password>",
-    "lifetime": seconds     number, optional
+    "access_password": "<access_password>",
+    "master_password": "<master_password>",
+    "lifetime": -1
 }
 ```
 
@@ -200,6 +200,7 @@ The return JSON examples below are only returned on code `200`.
 }
 ```
 - `200` on a successful id creation
+- `400` on invalid id, passwords or lifetime
 - `409` if the id already exists
 
 ---
@@ -209,21 +210,9 @@ The return JSON examples below are only returned on code `200`.
 
 **Requires:**
 ```json
-// password authentication
-{
-    "id": "<id>",
-    "password": "<password>",
-    "ip_address": "<ip address>",
-    "lifetime": seconds     number, optional
-}
-``` 
-
-```json
-// JWT authentication (write)
 {
     "jwt": "<jwt>",
     "ip_address": "<ip address>"
-    "lifetime": seconds     number, optional
 }
 ```
 
@@ -231,13 +220,13 @@ The return JSON examples below are only returned on code `200`.
 ```json
 {
     "info": "",
-    "last_update": timestamp    // integer
+    "last_update": -1
 }
 ```
 
 - `200` on a successful update
-- `400` invalid JSON object, invalid ip address
-- `401` invalid authentication (id does not exist, wrong password, invalid JWT, wrong JWT mode)
+- `400` invalid ip address
+- `401` invalid authentication (invalid JWT, wrong JWT mode)
 
 ---
 
@@ -246,15 +235,6 @@ The return JSON examples below are only returned on code `200`.
 
 **Requires:**
 ```json
-// password authentication
-{
-    "id": "<id>",
-    "password": "<password>",
-}
-``` 
-
-```json
-// JWT authentication (read)
 {
     "jwt": "<jwt>",
 }
@@ -264,14 +244,13 @@ The return JSON examples below are only returned on code `200`.
 ```json
 {
     "info": "<ip address>",
-    "last_update": timestamp,   // integer
-    "lifetime": timestamp       // integer
+    "last_update": -1,
+    "lifetime": -1
 }
 ```
 
 - `200` on a successful update
-- `400` invalid JSON object
-- `401` invalid authentication (id does not exist, wrong password, invalid JWT, wrong JWT mode)
+- `401` invalid authentication (invalid JWT, wrong JWT mode)
 
 ---
 
@@ -282,7 +261,7 @@ The return JSON examples below are only returned on code `200`.
 ```json
 {
     "id": "<id>",
-    "password": "<password>"
+    "password": "<master password>"
 }
 ```
 
@@ -305,7 +284,7 @@ The return JSON examples below are only returned on code `200`.
 // password authentication
 {
     "id": "<id>",
-    "password": "<password>",
+    "password": "<access password>",
     "mode": "<mode>"
 }
 ``` 
@@ -319,7 +298,7 @@ The return JSON examples below are only returned on code `200`.
 
 - `200` successful JWT generation
 - `400` invalid/unknown mode
-- `401` invalid authentication
+- `401` invalid authentication (id does not exist, wrong password)
 - `409` write JWT for id already exists
 
 ---
@@ -329,10 +308,9 @@ The return JSON examples below are only returned on code `200`.
 
 **Requires:**
 ```json
-// password authentication
 {
     "id": "<id>",
-    "password": "<password>",
+    "password": "<access password>",
     "jwt": "<mode>"
 }
 ``` 
@@ -346,6 +324,6 @@ The return JSON examples below are only returned on code `200`.
 
 - `200` successful JWT invalidation
 - `400` JWT invalid, wrong token mode
-- `401` invalid authentication
+- `401` invalid authentication (id does not exist, wrong password)
 
 ---

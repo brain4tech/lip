@@ -18,33 +18,6 @@ let endpointHandler = new EndpointHandler()
 // hello world
 app.get('/', () => JSON.stringify({info: 'hello localip-pub'}))
 
-// retrieve ip addresses
-app.post('/retrieve', async ({body, set, jwt}) => {
-        const returnObject = await endpointHandler.retrieveAddress(body, jwt)
-        set.status = returnObject.code
-        return returnObject.return
-    },
-    {
-        schema: {
-            body: t.Union(
-                [
-                    t.Object({
-                        id: t.String(),
-                        password: t.String(),
-                    }),
-                    t.Object({
-                        jwt: t.String()
-                    }),
-                ]
-            ),
-            response: t.Object({
-                info: t.String(),
-                last_update: t.Optional(t.Number()),
-                lifetime: t.Optional(t.Number())
-            })
-        }
-    })
-
 // create new ip address id
 app.post('/create', ({body, set}) => {
         const returnObject = endpointHandler.createAddress(body)
@@ -55,7 +28,8 @@ app.post('/create', ({body, set}) => {
         schema: {
             body: t.Object({
                 id: t.String(),
-                password: t.String(),
+                access_password: t.String(),
+                master_password: t.String(),
                 lifetime: t.Optional(t.Number())
             }),
             response: t.Object({
@@ -72,27 +46,36 @@ app.post('/update', async ({body, set, jwt}) => {
     },
     {
         schema: {
-            body: t.Union(
-                [
-                    t.Object({
-                        id: t.String(),
-                        password: t.String(),
-                    }),
-                    t.Object({
-                        jwt: t.String()
-                    }),
-                    t.Object({
-                        ip_address: t.String(),
-                        lifetime: t.Optional(t.Number())
-                    })
-                ]
-            ),
+            body: t.Object({
+                jwt: t.String(),
+                ip_address: t.String()
+            }),
             response: t.Object({
                 info: t.String(),
+                jwt: t.Optional(t.String()),
                 last_update: t.Optional(t.Number())
             })
         }
     })
+
+// retrieve ip addresses
+app.post('/retrieve', async ({body, set, jwt}) => {
+    const returnObject = await endpointHandler.retrieveAddress(body, jwt)
+    set.status = returnObject.code
+    return returnObject.return
+},
+{
+    schema: {
+        body: t.Object({
+            jwt: t.String()
+        }),
+        response: t.Object({
+            info: t.String(),
+            last_update: t.Optional(t.Number()),
+            lifetime: t.Optional(t.Number())
+        })
+    }
+})
 
 // delete an id
 app.post('/delete', async ({body, set}) => {

@@ -32,25 +32,10 @@ class BunDbHandler implements DbHandlerInterface {
         return this.dbInitSuccessful
     }
 
-    retrieveAddress(id: string): AddressDbSet | null {
-
-        let dbResult = this.db.query("SELECT * FROM addresses WHERE id = ?").get(id);
-        if (dbResult == null) return null
-
-        return {
-            id: dbResult.id,
-            passwordHash: dbResult.password_hash,
-            ipAddress: dbResult.ip_address,
-            createdOn: dbResult.created_on,
-            lastUpdate: dbResult.last_update,
-            lifetime: dbResult.lifetime
-        };
-    }
-
-    createAddress(id: string, passwordHash: string, createdOn: number, lifetime: number = -1): boolean {
+    createAddress(id: string, accessPasswordHash: string, masterPasswordHash: string, createdOn: number, lifetime: number = -1): boolean {
 
         try {
-            this.db.run("INSERT INTO addresses (id, password_hash, ip_address, created_on, last_update, lifetime) VALUES (?, ?, '', ?, -1, ?)", id, passwordHash, createdOn.toString(), lifetime.toString());
+            this.db.run("INSERT INTO addresses (id, access_password_hash, master_password_hash, ip_address, created_on, last_update, lifetime) VALUES (?, ?, ?, '', ?, -1, ?)", id, accessPasswordHash, masterPasswordHash, createdOn.toString(), lifetime.toString());
         } catch (error) {
             return false
         }
@@ -71,6 +56,22 @@ class BunDbHandler implements DbHandlerInterface {
         return true
     }
 
+    retrieveAddress(id: string): AddressDbSet | null {
+
+        let dbResult = this.db.query("SELECT * FROM addresses WHERE id = ?").get(id);
+        if (dbResult == null) return null
+
+        return {
+            id: dbResult.id,
+            accessPasswordHash: dbResult.access_password_hash,
+            masterPasswordHash: dbResult.master_password_hash,
+            ipAddress: dbResult.ip_address,
+            createdOn: dbResult.created_on,
+            lastUpdate: dbResult.last_update,
+            lifetime: dbResult.lifetime
+        };
+    }
+
     deleteAddress(id: string): boolean {
 
         const queryStmt = this.db.query("SELECT * FROM addresses WHERE id = ?")
@@ -81,7 +82,7 @@ class BunDbHandler implements DbHandlerInterface {
     }
 
     private initDb(): void {
-        this.db.run("CREATE TABLE IF NOT EXISTS addresses (id TEXT PRIMARY KEY NOT NULL UNIQUE, password_hash TEXT, ip_address TEXT, created_on INTEGER, last_update INTEGER, lifetime INTEGER)")
+        this.db.run("CREATE TABLE IF NOT EXISTS addresses (id TEXT PRIMARY KEY NOT NULL UNIQUE, access_password_hash TEXT, master_password_hash TEXT, ip_address TEXT, created_on INTEGER, last_update INTEGER, lifetime INTEGER)")
     }
 
     private fillDb(): void {
