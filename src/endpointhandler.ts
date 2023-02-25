@@ -14,19 +14,25 @@ import {
 } from "./interfaces"
 import {isIP} from "net"
 import { createHash } from "crypto"
-import { RateLimiter } from "limiter"
+import { RateLimiter, RateLimiterOpts } from "limiter"
 
 export {EndpointHandler}
+
+const rateLimiterSettings: RateLimiterOpts= {
+    tokensPerInterval: 6,
+    interval: 'minute',
+    fireImmediately: true
+}
 
 class EndpointHandler {
     private dbHandler: DbHandlerInterface
     private writeJWTs: Map<string, string>
-    private genReadTokensLimiter: RateLimiter
+    private readTokenGenLimiter: Map<string, RateLimiter>
 
     constructor() {
         this.dbHandler = new BunDbHandler()
         this.writeJWTs = new Map<string, string>()
-        this.genReadTokensLimiter = new RateLimiter({tokensPerInterval: 6, interval: 'minute', fireImmediately: true})
+        this.readTokenGenLimiter = new Map<string, RateLimiter>()
 
         if (!this.dbHandler.initSuccessful()) {
             throw new Error("Failed to initialize database.")
@@ -63,7 +69,10 @@ class EndpointHandler {
         }
 
         // calculate password hashes and store in db
-        this.dbHandler.createAddress(id, this.hashString(accessPassword), this.hashString(masterPassword), Date.now(), lifetime)
+        const success = this.dbHandler.createAddress(id, this.hashString(accessPassword), this.hashString(masterPassword), Date.now(), lifetime)
+        if (!success) return this.response(`error creating '${id}'`, 500)
+
+        this.readTokenGenLimiter.set(id, new RateLimiter(rateLimiterSettings))
         return this.response(`created new address '${id}'`)
     }
 
@@ -181,8 +190,18 @@ class EndpointHandler {
 
         // set rate limiter for acquiring read tokens
         if (data.mode === 'read'){
-            const remainingRequests: number = await this.genReadTokensLimiter.removeTokens(1)
-            if (remainingRequests < 0) return this.response("too many acquiring requests", 429)
+
+            const rateLimiter = this.readTokenGenLimiter.get(data.id)
+
+            if (rateLimiter){
+                const remainingRequests: number = await rateLimiter.removeTokens(1)
+                if (remainingRequests < 0) return this.response("too many acquiring requests", 429)
+            } else {
+                // create rate limiter
+                const newRateLimiter = new RateLimiter(rateLimiterSettings)
+                newRateLimiter.removeTokens(1)
+                this.readTokenGenLimiter.set(data.id, newRateLimiter)
+            }
         }
 
         // prevent multiple write tokens
@@ -247,6 +266,7 @@ class EndpointHandler {
         // lifetime expired
         if (ipAddress.lifetime != -1 && Math.floor(Date.now() / 1000) > ipAddress.lifetime){
             this.dbHandler.deleteAddress(ipAddress.id)
+            this.readTokenGenLimiter.delete(ipAddress.id)
             return false
         }
 
@@ -271,6 +291,7 @@ class EndpointHandler {
         // lifetime expired
         if (address.lifetime != -1 && Math.floor(Date.now() / 1000) > address.lifetime){
             this.dbHandler.deleteAddress(address.id)
+            this.readTokenGenLimiter.delete(address.id)
             return {code: 4}
         }
 

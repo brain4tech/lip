@@ -158,7 +158,7 @@ Token lifetimes are evaluated lazily. Thus exceeded id are deleted on the next a
 
 ### API endpoint reference
 Some general things to consider, before going into the details:
-- less is more. *localip-pub* tries to minify the amount of endpoints. If not specified, all endpoints are `POST`.
+- if not specified, all endpoints are `POST`
 - JSON is the only supported body content type. Make sure to set the `Content-Type`-header to `application/json`, else the application won't work and you'll receive a non-`200` status code
 - you'll always get a meaningful status code and response JSON `{"info": "<info here>"}` (specified per endpoint)
 - `info` always contains some information in case of an error, `200`'s don't contain more information except when specified
@@ -281,7 +281,6 @@ The return JSON examples below are only returned on code `200`.
 
 **Requires:**
 ```json
-// password authentication
 {
     "id": "<id>",
     "password": "<access password>",
