@@ -1,7 +1,8 @@
 import Elysia, {t} from 'elysia'
-import { jwt } from '@elysiajs/jwt'
+import {jwt} from '@elysiajs/jwt'
 import {EndpointHandler} from './endpointhandler'
 
+// read JWT secret token from environment variables or set to default
 let jwtSecret: string | undefined = Bun.env['LOCALIP_PUB_JWT_SECRET']
 jwtSecret = ((jwtSecret === undefined) ? 'g0hZu73c7IpUJUViMJtRkvdVU8pf7tqCCaVisfJK' : jwtSecret)
 
@@ -15,10 +16,14 @@ app.use(
 )
 let endpointHandler = new EndpointHandler()
 
-// hello world
+/**
+ * Hello world endpoint.
+ */
 app.get('/', () => JSON.stringify({info: 'hello localip-pub'}))
 
-// create new ip address id
+/**
+ * Create new address.
+ */
 app.post('/create', ({body, set}) => {
         const returnObject = endpointHandler.createAddress(body)
         set.status = returnObject.code
@@ -38,7 +43,9 @@ app.post('/create', ({body, set}) => {
         }
     })
 
-// update ip address ip
+/**
+ * Update an address.
+ */
 app.post('/update', async ({body, set, jwt}) => {
         const returnObject = await endpointHandler.updateAddress(body, jwt)
         set.status = returnObject.code
@@ -58,86 +65,93 @@ app.post('/update', async ({body, set, jwt}) => {
         }
     })
 
-// retrieve ip addresses
+/**
+ * Retrieve an address.
+ */
 app.post('/retrieve', async ({body, set, jwt}) => {
-    const returnObject = await endpointHandler.retrieveAddress(body, jwt)
-    set.status = returnObject.code
-    return returnObject.return
-},
-{
-    schema: {
-        body: t.Object({
-            jwt: t.String()
-        }),
-        response: t.Object({
-            info: t.String(),
-            last_update: t.Optional(t.Number()),
-            lifetime: t.Optional(t.Number())
-        })
-    }
-})
+        const returnObject = await endpointHandler.retrieveAddress(body, jwt)
+        set.status = returnObject.code
+        return returnObject.return
+    },
+    {
+        schema: {
+            body: t.Object({
+                jwt: t.String()
+            }),
+            response: t.Object({
+                info: t.String(),
+                last_update: t.Optional(t.Number()),
+                lifetime: t.Optional(t.Number())
+            })
+        }
+    })
 
-// delete an id
+/**
+ * Delete an address.
+ */
 app.post('/delete', async ({body, set}) => {
-    const returnObject = await endpointHandler.deleteAddress(body)
-    set.status = returnObject.code
-    return returnObject.return
-},
-{
-    schema: {
-        body: t.Object({
-            id: t.String(),
-            password: t.String()
-        }),
-        response: t.Object({
-            info: t.String()
-        })
-    }
-})
+        const returnObject = await endpointHandler.deleteAddress(body)
+        set.status = returnObject.code
+        return returnObject.return
+    },
+    {
+        schema: {
+            body: t.Object({
+                id: t.String(),
+                password: t.String()
+            }),
+            response: t.Object({
+                info: t.String()
+            })
+        }
+    })
 
-// acquire jwt
+/**
+ * Acquire a JWT.
+ */
 app.post('/jwt', async ({body, set, jwt}) => {
-    const returnObject = await endpointHandler.acquireJWT(body, jwt)
-    set.status = returnObject.code
-    return returnObject.return
-},
-{
-    schema: {
-        body: t.Object({
-            id: t.String(),
-            password: t.String(),
-            mode: t.String()
-        }),
-        response: t.Object({
-            info: t.String()
-        })
-    }
-})
+        const returnObject = await endpointHandler.acquireJWT(body, jwt)
+        set.status = returnObject.code
+        return returnObject.return
+    },
+    {
+        schema: {
+            body: t.Object({
+                id: t.String(),
+                password: t.String(),
+                mode: t.String()
+            }),
+            response: t.Object({
+                info: t.String()
+            })
+        }
+    })
 
-// invalidate jwt in write mode
+/**
+ * Invalidate a JWT in write mode.
+ */
 app.post('/invalidatejwt', async ({body, set, jwt}) => {
-    const returnObject = await endpointHandler.invalidateJWT(body, jwt)
-    set.status = returnObject.code
-    return returnObject.return
-},
-{
-    schema: {
-        body: t.Object({
-            id: t.String(),
-            password: t.String(),
-            jwt: t.String()
-        }),
-        response: t.Object({
-            info: t.String()
-        })
-    }
-})
+        const returnObject = await endpointHandler.invalidateJWT(body, jwt)
+        set.status = returnObject.code
+        return returnObject.return
+    },
+    {
+        schema: {
+            body: t.Object({
+                id: t.String(),
+                password: t.String(),
+                jwt: t.String()
+            }),
+            response: t.Object({
+                info: t.String()
+            })
+        }
+    })
 
-// error handling
+// some error handling
 app.onError(({code, set, error}) => {
 
-    console.log("An error occurred:")
-    console.log(error)
+    console.log(`Caught ${error.name}: '${error.message}'`)
 
     if (code == 'VALIDATION') {
         set.status = 400
@@ -157,5 +171,6 @@ app.onError(({code, set, error}) => {
     return ''
 })
 
+// start application on 0.0.0.0 and port 8080
 app.listen(8080)
 console.log(`localip-pub running at ${app.server?.hostname}:${app.server?.port}`)

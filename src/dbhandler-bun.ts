@@ -3,12 +3,32 @@ import {Database} from "bun:sqlite";
 
 export {BunDbHandler}
 
+/**
+ * Database handler/wrapper class for bun:sqlite.
+ */
 class BunDbHandler implements DbHandlerInterface {
 
+    /**
+     * Database connection.
+     * @private
+     */
     private db: Database
+
+    /**
+     * Database name.
+     * @private
+     */
     private readonly dbName: string
+
+    /**
+     * Whether a database initialization has been successful or not.
+     * @private
+     */
     private readonly dbInitSuccessful: boolean
 
+    /**
+     * Class constructor.
+     */
     constructor() {
         // default init status to false
         const dbEnvName = Bun.env['LOCALIP_PUB_DBNAME']
@@ -28,10 +48,21 @@ class BunDbHandler implements DbHandlerInterface {
         this.dbInitSuccessful = true
     }
 
+    /**
+     * Whether a database initialization has been successful or not.
+     */
     initSuccessful(): boolean {
         return this.dbInitSuccessful
     }
 
+    /**
+     * Create a new address in the database.
+     * @param id Identifier of address.
+     * @param accessPasswordHash Hash value of access password.
+     * @param masterPasswordHash Hash value of master password.
+     * @param createdOn Timestamp of id creation.
+     * @param lifetime Lifetime of address.
+     */
     createAddress(id: string, accessPasswordHash: string, masterPasswordHash: string, createdOn: number, lifetime: number = -1): boolean {
 
         try {
@@ -42,6 +73,13 @@ class BunDbHandler implements DbHandlerInterface {
         return true
     }
 
+    /**
+     * Update an address in the database.
+     * @param id Address to be updated.
+     * @param ip_address Value id should be set to.
+     * @param timestamp Timestamp of id update.
+     * @param lifetime New lifetime of address.
+     */
     updateAddress(id: string, ip_address: string, timestamp: number, lifetime: number | null): boolean {
 
         const queryStmt = this.db.query("SELECT * FROM addresses WHERE id = ?")
@@ -56,6 +94,10 @@ class BunDbHandler implements DbHandlerInterface {
         return true
     }
 
+    /**
+     * Get a complete address dataset of id in the db.
+     * @param id Id of address to return.
+     */
     retrieveAddress(id: string): AddressDbSet | null {
 
         let dbResult = this.db.query("SELECT * FROM addresses WHERE id = ?").get(id);
@@ -72,6 +114,10 @@ class BunDbHandler implements DbHandlerInterface {
         };
     }
 
+    /**
+     * Delete an address from the database.
+     * @param id Id to delete.
+     */
     deleteAddress(id: string): boolean {
 
         const queryStmt = this.db.query("SELECT * FROM addresses WHERE id = ?")
@@ -81,12 +127,11 @@ class BunDbHandler implements DbHandlerInterface {
         return true
     }
 
+    /**
+     * Initialize database.
+     * @private
+     */
     private initDb(): void {
         this.db.run("CREATE TABLE IF NOT EXISTS addresses (id TEXT PRIMARY KEY NOT NULL UNIQUE, access_password_hash TEXT, master_password_hash TEXT, ip_address TEXT, created_on INTEGER, last_update INTEGER, lifetime INTEGER)")
-    }
-
-    private fillDb(): void {
-        this.db.run("INSERT INTO addresses (id, ip_address) VALUES (?, ?)", "test_1", "192.168.1.1");
-        this.db.run("INSERT INTO addresses (id, ip_address) VALUES (?, ?)", "test_2", "192.168.1.2");
     }
 }

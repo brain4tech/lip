@@ -24,11 +24,32 @@ const rateLimiterSettings: RateLimiterOpts= {
     fireImmediately: true
 }
 
+/**
+ * Handler class for abstracted endpoint handling.
+ */
 class EndpointHandler {
+
+    /**
+     * Database abstraction class.
+     * @private
+     */
     private dbHandler: DbHandlerInterface
+
+    /**
+     * Map to store valid JWTs in write mode.
+     * @private
+     */
     private writeJWTs: Map<string, string>
+
+    /**
+     * Read JWT generation limiter per address id.
+     * @private
+     */
     private readTokenGenLimiter: Map<string, RateLimiter>
 
+    /**
+     * Class constructor.
+     */
     constructor() {
         this.dbHandler = new BunDbHandler()
         this.writeJWTs = new Map<string, string>()
@@ -39,8 +60,13 @@ class EndpointHandler {
         }
     }
 
+    /**
+     * Create a new address.
+     * @param data Request body parsed into an object.
+     */
     createAddress(data: CreateObject): EndpointReturnObject {
 
+        // prepare data content
         let id: string = data.id.trim()
         let accessPassword: string = data.access_password.trim()
         let masterPassword: string = data.master_password.trim()
@@ -59,7 +85,7 @@ class EndpointHandler {
             lifetime = this.calculateLifetime(data.lifetime)
         }
 
-        // check if id already exists to prevent unneccessary calculations
+        // check if id already exists to prevent unnecessary calculations
         const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(id)
         if (ipAddress) {
             if (!this.hasLifetimeExceeded(ipAddress.lifetime)) return this.response("id already exists", 409)
@@ -72,10 +98,16 @@ class EndpointHandler {
         const success = this.dbHandler.createAddress(id, this.hashString(accessPassword), this.hashString(masterPassword), Date.now(), lifetime)
         if (!success) return this.response(`error creating '${id}'`, 500)
 
+        // instantiate rate limiter
         this.readTokenGenLimiter.set(id, new RateLimiter(rateLimiterSettings))
         return this.response(`created new address '${id}'`)
     }
 
+    /**
+     * Update an existent ip address.
+     * @param data Request body parsed into an object.
+     * @param jwt JWT handling instance.
+     */
     async updateAddress(data: UpdateObject, jwt: any): Promise<EndpointReturnObject> {
 
         if (isIP(data.ip_address) == 0) {
@@ -134,6 +166,11 @@ class EndpointHandler {
         return returnObject
     }
 
+    /**
+     * Get an ip address.
+     * @param data Request body parsed into an object.
+     * @param jwt JWT handling instance.
+     */
     async retrieveAddress(data: JWTAuthObject, jwt: any): Promise<EndpointReturnObject> {
         
         const authenticated = await this.authJWT(jwt, data.jwt, 'read')
@@ -162,6 +199,10 @@ class EndpointHandler {
         return returnObject
     }
 
+    /**
+     * Delete an ip address.
+     * @param data Request body parsed into an object.
+     */
     deleteAddress(data: CredentialAuth): EndpointReturnObject {
 
         if (!this.authCredentials(data.id, data.password, 'master')){
@@ -177,6 +218,11 @@ class EndpointHandler {
         return this.response(`deleted address '${data.id}'`)
     }
 
+    /**
+     * Create a JWT for id.
+     * @param data Request body parsed into an object.
+     * @param jwt JWT handling instance.
+     */
     async acquireJWT(data: JWTAcquiringObject, jwt: any): Promise<EndpointReturnObject>{
 
         // check if valid modes
@@ -224,6 +270,12 @@ class EndpointHandler {
         return this.response(token)
     }
 
+    /**
+     * Invalidate a previously created JWT with write access.
+     *
+     * @param data Request body parsed into an object.
+     * @param jwt JWT handling instance.
+     */
     async invalidateJWT(data: JWTInvalidationObject, jwt: any): Promise<EndpointReturnObject>{
 
         // check if correct id and password
@@ -246,7 +298,13 @@ class EndpointHandler {
         return this.response()
     }
 
-
+    /**
+     * Authenticate passed credentials by comparing them with the database.
+     * @param id Id of address.
+     * @param password Password to address id.
+     * @param type Password type. Either 'master' or 'access'.
+     * @private
+     */
     private authCredentials(id: string, password: string, type: string): boolean {
         // check if id exists
         const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(id)
@@ -273,6 +331,13 @@ class EndpointHandler {
         return true
     }
 
+    /**
+     * Authenticate passed JWT.
+     * @param verifier JWT handling instance.
+     * @param jwt JWT to authenticate.
+     * @param requiredTokenMode Access mode of token. Either 'read' or 'write'.
+     * @private
+     */
     private async authJWT(verifier: any, jwt: string | undefined, requiredTokenMode: string): Promise<AuthReturnObject> {
         
         if (!jwt) return {code: 1}
@@ -301,10 +366,21 @@ class EndpointHandler {
         return {code: 0, id: token.id}
     }
 
+    /**
+     * Hashes a given input.
+     * @param input String to hash.
+     * @private
+     */
     private hashString(input: string): string {
         return createHash('sha256').update(input).digest('hex')
     }
 
+    /**
+     * Compares a plain password to a hashed password.
+     * @param password Password to compare.
+     * @param passwordHash Already hashed password.
+     * @private
+     */
     private comparePasswordWithHash(password: string, passwordHash: string): boolean {
         const hash = createHash('sha256').update(password).digest('hex')
         if (hash !== passwordHash) {
@@ -314,6 +390,11 @@ class EndpointHandler {
         return true
     }
 
+    /**
+     * Calculate lifetime by adding lifetime delta to current time.
+     * @param addedLifetime Lifetime to add onto current time.
+     * @private
+     */
     private calculateLifetime(addedLifetime: number): number {
 
         if (addedLifetime == -1) return -1
@@ -321,6 +402,11 @@ class EndpointHandler {
         return Math.floor(Date.now() / 1000) + addedLifetime
     }
 
+    /**
+     * Validate passed lifetime.
+     * @param lifetime Integer to validate.
+     * @private
+     */
     private checkLifetimeNumber(lifetime: number): boolean {
 
         // below 'infinite' (-1)
@@ -332,6 +418,11 @@ class EndpointHandler {
         return true
     }
 
+    /**
+     * Check if passed lifetime is expired.
+     * @param lifetime Integer to validate.
+     * @private
+     */
     private hasLifetimeExceeded(lifetime: number): boolean {
         // lifetime is infinite
         if (lifetime == -1) return false
@@ -342,6 +433,12 @@ class EndpointHandler {
         return true
     }
 
+    /**
+     * Return a universal response object containing a return body and status code.
+     * @param message Message to write into the body.
+     * @param code HTTP return code.
+     * @private
+     */
     private response(message: string = "", code: number = 200): EndpointReturnObject {
         return {return: {info: message}, code: code}
     }
