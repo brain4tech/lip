@@ -32,6 +32,30 @@ class BunDbHandler implements DbHandlerInterface {
         return this.dbInitSuccessful
     }
 
+    createAddress(id: string, accessPasswordHash: string, masterPasswordHash: string, createdOn: number, lifetime: number = -1): boolean {
+
+        try {
+            this.db.run("INSERT INTO addresses (id, access_password_hash, master_password_hash, ip_address, created_on, last_update, lifetime) VALUES (?, ?, ?, '', ?, -1, ?)", id, accessPasswordHash, masterPasswordHash, createdOn.toString(), lifetime.toString());
+        } catch (error) {
+            return false
+        }
+        return true
+    }
+
+    updateAddress(id: string, ip_address: string, timestamp: number, lifetime: number | null): boolean {
+
+        const queryStmt = this.db.query("SELECT * FROM addresses WHERE id = ?")
+        if (queryStmt.get(id) === null) return false
+
+        if (lifetime) {
+            this.db.run("UPDATE addresses SET ip_address = ?, last_update = ?, lifetime = ? WHERE id = ?", ip_address, timestamp.toString(), lifetime.toString(), id);
+        } else {
+            this.db.run("UPDATE addresses SET ip_address = ?, last_update = ? WHERE id = ?", ip_address, timestamp.toString(), id);
+        }
+
+        return true
+    }
+
     retrieveAddress(id: string): AddressDbSet | null {
 
         let dbResult = this.db.query("SELECT * FROM addresses WHERE id = ?").get(id);
@@ -39,33 +63,26 @@ class BunDbHandler implements DbHandlerInterface {
 
         return {
             id: dbResult.id,
-            passwordHash: dbResult.password_hash,
+            accessPasswordHash: dbResult.access_password_hash,
+            masterPasswordHash: dbResult.master_password_hash,
             ipAddress: dbResult.ip_address,
-            last_update: dbResult.last_update
+            createdOn: dbResult.created_on,
+            lastUpdate: dbResult.last_update,
+            lifetime: dbResult.lifetime
         };
     }
 
-    createAddress(id: string, passwordHash: string): boolean {
-
-        try {
-            this.db.run("INSERT INTO addresses (id, password_hash, ip_address, last_update) VALUES (?, ?, '', -1)", id, passwordHash);
-        } catch (error) {
-            return false
-        }
-        return true
-    }
-
-    updateAddress(id: string, ip_address: string, timestamp: number): boolean {
+    deleteAddress(id: string): boolean {
 
         const queryStmt = this.db.query("SELECT * FROM addresses WHERE id = ?")
         if (queryStmt.get(id) === null) return false
 
-        this.db.run("UPDATE addresses SET ip_address = ?, last_update = ? WHERE id = ?", ip_address, timestamp.toString(), id);
+        this.db.run("DELETE FROM addresses WHERE id = ?", id);
         return true
     }
 
     private initDb(): void {
-        this.db.run("CREATE TABLE IF NOT EXISTS addresses (id TEXT PRIMARY KEY NOT NULL UNIQUE, password_hash TEXT, ip_address TEXT, last_update INTEGER)")
+        this.db.run("CREATE TABLE IF NOT EXISTS addresses (id TEXT PRIMARY KEY NOT NULL UNIQUE, access_password_hash TEXT, master_password_hash TEXT, ip_address TEXT, created_on INTEGER, last_update INTEGER, lifetime INTEGER)")
     }
 
     private fillDb(): void {

@@ -22,12 +22,15 @@ It's ...
 - [A bit on the Why's](#a-bit-on-the-whys)
 - [About internal architectures and made decisions](#about-internal-architectures-and-made-decisions)
 - [Documentation](#documentation)
-  - [Authentication methods](#authentication-methods)
+  - [Concepts](#concepts)
+    - [Authentication](#authentication)
+    - [Lifetimes](#lifetimes)
   - [API endpoint reference](#api-endpoint-reference)
     - [`/` (GET)](#-get)
     - [`/create`](#create)
     - [`/update`](#update)
     - [`/retrieve`](#retrieve)
+    - [`/delete`](#delete)
     - [`/jwt`](#jwt)
     - [`/invalidatejwt`](#invalidatejwt)
 
@@ -97,14 +100,14 @@ You'll be better when using this solution in a closed, project-intern environmen
 
 Currently there are several features missing for the project to be "completed":
 
+-  [ ] use bcrypt password hashing instead of sha256 for improved security and/or password salting
+-  [ ] source code documentation
 -  [x] protect reading/writing id's using passwords
 -  [x] use JWTs for regular address updating
--  [x] add jwt requiring cooldown + modify jwt expire date
--  [ ] use bcrypt password hashing instead of sha256 for improved security and/or password salting
--  [ ] ad lifetime for id to free it after certain amount of time (infinite should also be possible)
--  [ ] overview on existing id's and their lifetime
+-  [x] add JWT requiring cooldown + modify JWT expire date
+-  [x] add lifetime for id to free it after certain amount of time (infinite should also be possible)
 -  [x] easy deployment with docker and docker compose
--  [ ] source code documentation
+-  [ ] overview on existing id's and their lifetime
 
 Possible features for post project completion could be:
 - a password reset feature, connected to an email
@@ -125,29 +128,37 @@ A tangible example would be a server on a local machine and a web application th
 
 ## Documentation
 
-### Authentication methods
+### Concepts
+#### Authentication
 
 **TLDR;**
-- password authentication with `id` and `password` is always possible, but more resource intensive
-- for regular ip address updates and retrieves, use JWTs
-- get a JWT at [`/jwt`](#jwt) by providing credential and a token mode
+- when creating an ip at [`/create`](#create), you'll need to specify an *access* and *master* password
+- updating and retrieving ip addresses require a JWT
 - possible token modes are *read* (only usable at [`/retrieve`](#retrieve)) and *write* (only usable at [`/update`](#update))
+- get a JWT at [`/jwt`](#jwt) by providing credential and a token mode
+- JWTs can be acquired with *access* passwords only
 - tokens expire after 6 minutes
-- when a *write*-token for an id was acquired, the id can only get updated with the token, not normal credentials
-- the creation of *read*-tokens is limited to 6 tokens per minute
-- *write*-tokens should be invalidated after usage
+- the creation of *read*-tokens is limited to 6 tokens per minute per id
+- *write*-tokens should be invalidated at [`/invalidatejwt`](#invalidatejwt) after usage
+- an ip can be deleted at [`/delete`](#delete) with the *master* password only
+- when deleting an ip, all existing tokens for that id won't be usable again, even if id is recreated afterwards
 
-When creating a new id, you'll be required to define a password. This is to protect the stored ip from being changed by someone unauthorized. This means that you need to add your credentials for each update an retrieval. This is no problem when updating/retrieving the ip *once*, but as soon as you are planning to update/retrieve the ip regularly, you'll be better using a JWT.
+When creating a new id, you'll be required to define two passwords. This is to protect the stored ip from being read, changed or deleted by unauthorized users. There are two types of passwords: *access* passwords and *master* passwords. While the *access* password can be shared with other clients/users, the *master* password should be kept internal. You cannot update or retrieve ip addresses with credentials. You'll need a JWT.
 
-JWTs are an alternate way of authentication. Instead of adding the id and password with every request, you simply add the JWT. By authenticating only once and proving that you already are authenticated by delivering the token, the system skips the (resource intensive) step of hashing and comparing passwords. You'll be able to update and retrieve ip addresses faster.
+To create a JWT, use the [`/jwt`](#jwt) endpoint. Authenticate with id and *access* password, and set a JWt mode. There are two available modes: *read* and *write*. *read*-tokens can only be used at [`/retrieve`](#retrieve), and *write*-tokens can only be used at [`/update`](#update). In addition, a *write*-token can be generated only once per id, while there are "infinite" *read*-tokens (rate limited to 6/minute per id). Once a *write*-token has been generated, the id can only be updated through the valid JWT. Tokens last for 6 minutes. 
 
-To create a JWT, use the [`/jwt`](#jwt) endpoint. Authenticate with id and password, and set a JWt mode. There are two available modes: *read* and *write*. *read*-tokens can only be used at [`/retrieve`](#retrieve), and *write*-tokens can only be used at [`/update`](#update). In addition, a *write*-token can be generated only once per id, while there are "infinite" *read*-tokens. Once a *write*-token has been generated, the id can only be updated through the valid jwt. Tokens last for 6 minutes. 
+*read*-tokens stay valid over multiple application restarts, while *write*-tokens need to be created after every restart. To invalidate all existing tokens, modify the JWT secret. It should be best practice to invalidate *write*-tokens at [`/invalidatejwt`](#invalidatejwt) after usage. This happens automatically after 6 minutes, but during this time, no other *write*-token can be created.
 
-*read*-tokens stay valid over multiple application restarts, while *write*-tokens need to be created after every restart. To invalidate all existing tokens, modify the JWT secret.
+When deleting an id `a` and recreating it (`a'`), all existing JWTs for `a` will not work for `a'`. This ensures that JWTs must be generated for every "new" id. An id can be deleted at [`/delete`](#delete) using the *master* password.
+
+#### Lifetimes
+Each token can have a lifetime, measured in seconds. It can be set to everything between -1 and 31536000 (one year). `-1` stands for infinite, `0` for a token deletion within the next second. The lifetime is automatically refreshed with each token update.
+
+Token lifetimes are evaluated lazily. Thus exceeded id are deleted on the next access attempt.
 
 ### API endpoint reference
 Some general things to consider, before going into the details:
-- less is more. *localip-pub* tries to minify the amount of endpoints. If not specified, all endpoints are `POST`.
+- if not specified, all endpoints are `POST`
 - JSON is the only supported body content type. Make sure to set the `Content-Type`-header to `application/json`, else the application won't work and you'll receive a non-`200` status code
 - you'll always get a meaningful status code and response JSON `{"info": "<info here>"}` (specified per endpoint)
 - `info` always contains some information in case of an error, `200`'s don't contain more information except when specified
@@ -176,7 +187,9 @@ The return JSON examples below are only returned on code `200`.
 ```json
 {
     "id": "<new_id>",
-    "password": "<password>"
+    "access_password": "<access_password>",
+    "master_password": "<master_password>",
+    "lifetime": -1
 }
 ```
 
@@ -187,6 +200,7 @@ The return JSON examples below are only returned on code `200`.
 }
 ```
 - `200` on a successful id creation
+- `400` on invalid id, passwords or lifetime
 - `409` if the id already exists
 
 ---
@@ -196,16 +210,6 @@ The return JSON examples below are only returned on code `200`.
 
 **Requires:**
 ```json
-// password authentication
-{
-    "id": "<id>",
-    "password": "<password>",
-    "ip_address": "<ip address>"
-}
-``` 
-
-```json
-// jwt authentication (write)
 {
     "jwt": "<jwt>",
     "ip_address": "<ip address>"
@@ -216,13 +220,13 @@ The return JSON examples below are only returned on code `200`.
 ```json
 {
     "info": "",
-    "last_update": timestamp    // integer
+    "last_update": -1
 }
 ```
 
 - `200` on a successful update
-- `400` invalid JSON object, invalid ip address
-- `401` invalid authentication (id does not exist, wrong password, invalid jwt, wrong jwt mode)
+- `400` invalid ip address
+- `401` invalid authentication (invalid JWT, wrong JWT mode)
 
 ---
 
@@ -231,15 +235,6 @@ The return JSON examples below are only returned on code `200`.
 
 **Requires:**
 ```json
-// password authentication
-{
-    "id": "<id>",
-    "password": "<password>",
-}
-``` 
-
-```json
-// jwt authentication (read)
 {
     "jwt": "<jwt>",
 }
@@ -249,13 +244,35 @@ The return JSON examples below are only returned on code `200`.
 ```json
 {
     "info": "<ip address>",
-    "last_update": timestamp    // integer
+    "last_update": -1,
+    "lifetime": -1
 }
 ```
 
 - `200` on a successful update
-- `400` invalid JSON object
-- `401` invalid authentication (id does not exist, wrong password, invalid jwt, wrong jwt mode)
+- `401` invalid authentication (invalid JWT, wrong JWT mode)
+
+---
+
+#### `/delete`
+*Delete an id.*
+
+**Requires:**
+```json
+{
+    "id": "<id>",
+    "password": "<master password>"
+}
+```
+
+**Returns:**
+```json
+{
+    "info": "deleted address '<id>'"
+}
+```
+- `200` on a successful id creation
+- `401` invalid authentication (id does not exist, wrong password)
 
 ---
 
@@ -264,10 +281,9 @@ The return JSON examples below are only returned on code `200`.
 
 **Requires:**
 ```json
-// password authentication
 {
     "id": "<id>",
-    "password": "<password>",
+    "password": "<access password>",
     "mode": "<mode>"
 }
 ``` 
@@ -279,10 +295,10 @@ The return JSON examples below are only returned on code `200`.
 }
 ```
 
-- `200` successful jwt generation
+- `200` successful JWT generation
 - `400` invalid/unknown mode
-- `401` invalid authentication
-- `409` write jwt for id already exists
+- `401` invalid authentication (id does not exist, wrong password)
+- `409` write JWT for id already exists
 
 ---
 
@@ -291,10 +307,9 @@ The return JSON examples below are only returned on code `200`.
 
 **Requires:**
 ```json
-// password authentication
 {
     "id": "<id>",
-    "password": "<password>",
+    "password": "<access password>",
     "jwt": "<mode>"
 }
 ``` 
@@ -306,8 +321,8 @@ The return JSON examples below are only returned on code `200`.
 }
 ```
 
-- `200` successful jwt invalidation
-- `400` jwt invalid, wrong token mode
-- `401` invalid authentication
+- `200` successful JWT invalidation
+- `400` JWT invalid, wrong token mode
+- `401` invalid authentication (id does not exist, wrong password)
 
 ---

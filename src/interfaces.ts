@@ -1,19 +1,26 @@
 export {DbHandlerInterface, AddressDbSet}
-export {RetrieveObject, CreateObject, UpdateObject}
+export {CredentialAuth, JWTAuthObject, AuthReturnObject}
+export {CreateObject, UpdateObject}
 export {JWTAcquiringObject, JWTInvalidationObject, JWTPayload}
-export {AuthObject, AuthReturnObject}
 export {EndpointReturnObject}
 
 type AddressDbSet = {
     id: string
-    passwordHash: string
+    accessPasswordHash: string
+    masterPasswordHash: string
     ipAddress: string
-    last_update: number
+    createdOn: number
+    lastUpdate: number
+    lifetime: number
 }
-type AuthObject =  {
-    id?: string
-    password?: string
-    jwt?: string
+
+type CredentialAuth = {
+    id: string
+    password: string
+}
+
+type JWTAuthObject = {
+    jwt: string
 }
 
 type AuthReturnObject = {
@@ -21,39 +28,36 @@ type AuthReturnObject = {
     id?: string
 }
 
-type RetrieveObject = AuthObject
-
 type CreateObject = {
     id: string
-    password: string
+    master_password: string
+    access_password: string
+    lifetime?: number | undefined
 }
 
-type UpdateObject = AuthObject & {
+type UpdateObject = JWTAuthObject & {
     ip_address: string
 }
 
-type JWTAcquiringObject = {
-    id: string
-    password: string
+type JWTAcquiringObject = CredentialAuth & {
     mode: string
 }
 
-type JWTInvalidationObject = {
-    id: string
-    password: string
+type JWTInvalidationObject = CredentialAuth & {
     jwt: string
 }
 
 type JWTPayload = {
     id: string
     mode: string
-    timestamp: number
+    created_on: number
 }
 
 type EndpointReturnObject = {
     return: {
         info: string
         last_update?: number
+        lifetime?: number
     }
     code: number
 }
@@ -63,7 +67,9 @@ interface DbHandlerInterface {
 
     retrieveAddress(id: string): AddressDbSet | null
 
-    createAddress(id: string, passwordHash: string): boolean
+    createAddress(id: string, accessPasswordHash: string, masterPasswordHash: string, createdOn: number, lifetime?: number): boolean
 
-    updateAddress(id: string, ip_address: string, timestamp: number): boolean
+    updateAddress(id: string, ip_address: string, timestamp: number, lifetime?: number | null): boolean
+
+    deleteAddress(id: string): boolean
 }
