@@ -1,6 +1,8 @@
-<h1>localip-pub</h1>
+<h1>lip</h1>
 
-*localip-pub* is a work in progress webservice for publishing and retrieving ip addresses, written in Typescript. It's mainly designed for distributed architectures that run in local networks, but are not able to find each other through local solutions (e.g. multicasts).
+**Publish and retrieve your local ip addresses!**
+
+*lip* (acronym for *Local Ip Publisher*) is a small webservice for publishing and retrieving (local) ip addresses, written in Typescript. It's mainly designed for distributed architectures that run in local networks, but are not able to find each other through local solutions (e.g. multicasts).
 
 It's ...
 - **fast** and **lightweight** by using [bun](https://bun.sh/) as its javascript runtime, [ElysiaJS](https://elysiajs.com/) as the [fastest web framework](https://github.com/SaltyAom/bun-http-framework-benchmark) currently available and SQLite for a local database
@@ -8,7 +10,7 @@ It's ...
 - **extensible**, so alternative web frameworks and runtimes can be used if desired (you will need to rewrite some code tho)
 - **easy-to-use** and **straight-forward**, because we don't like complicated APIs
 
-***localip-pub* is currently in development. While the `main` branch can be used in production, not all needed features will be included. Currently, the application starts on `0.0.0.0:8080` by default.**
+***lip* is currently in development. While the `main` branch can be used in production, not all needed features will be included. The application starts on `0.0.0.0:8080` by default.**
 
 <h2>Table of Contents</h2>
 
@@ -26,7 +28,7 @@ It's ...
     - [Authentication](#authentication)
     - [Lifetimes](#lifetimes)
   - [API endpoint reference](#api-endpoint-reference)
-    - [`/` (GET)](#-get)
+    - [`/` (GET)](#--get-)
     - [`/create`](#create)
     - [`/update`](#update)
     - [`/retrieve`](#retrieve)
@@ -53,12 +55,12 @@ and you are good to go.
 
 Clone this repository and execute
 ```sh
-docker build -t localip-pub .
+docker build -t lip .
 ```
 
 You can now run the application with
 ```sh
-docker run -p 8080:8080 -it localip-pub
+docker run -p 8080:8080 -it lip
 ```
 
 ### Docker compose
@@ -72,9 +74,9 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - LOCALIP_PUB_DBNAME: <MY_DB_NAME>
-      - LOCALIP_PUB_JWT_SECRET: <MY_JWT_SECRET>
-    container_name: localip-pub
+      - LIP_DBNAME: <MY_DB_NAME>
+      - LIP_JWT_SECRET: <MY_JWT_SECRET>
+    container_name: lip
     restart: always
 ```
 
@@ -86,9 +88,9 @@ docker compose up -d
 and the container should be build and executed automagically.
 
 ### Environment variables
-*localip-pub* creates a new SQLite database called `db.sqlite` at the directory you started the command from. You can change this by setting the `LOCALIP_PUB_DBNAME` environment variable to the directory and name of your choice.
+*lip* creates a new SQLite database called `db.sqlite` at the directory you started the command from. You can change this by setting the `LIP_DBNAME` environment variable to the directory and name of your choice.
 
-JWT generation and validation requires a secret token. *localip-pub* provides a default secret, but it is advised to use your own one by setting the `LOCALIP_PUB_JWT_SECRET` environment variable.
+JWT generation and validation requires a secret token. *lip* provides a default secret, but it is advised to use your own one by setting the `LIP_JWT_SECRET` environment variable.
 
 
 ### Final notice
@@ -96,12 +98,12 @@ You'll be better when using this solution in a closed, project-intern environmen
 
 
 ## Missing features and ToDo's
-*localip-pub* is in early development. The `main` branch will contain stable releases, whereas development takes place in `dev` and features are developed in `feat/<feature-name>` branches.
+*lip* is in early development. The `main` branch will contain stable releases, whereas development takes place in `dev` and features are developed in `feat/<feature-name>` branches.
 
-Currently there are several features missing for the project to be "completed":
+Currently, there are several features missing for the project to be "completed":
 
 -  [ ] use bcrypt password hashing instead of sha256 for improved security and/or password salting
--  [ ] source code documentation
+-  [x] source code documentation
 -  [x] protect reading/writing id's using passwords
 -  [x] use JWTs for regular address updating
 -  [x] add JWT requiring cooldown + modify JWT expire date
@@ -115,7 +117,7 @@ Possible features for post project completion could be:
 - multiplattform cli for application usage from the command line
 
 ## A bit on the Why's
-Basically *localip-sub* is a text-sharing application, where each text is secured with a pre-known id and password. So when starting a "server" and "client" that should communicate, but are unable to find each other (because of e.g. outer restrictions), they can use the set id and password to publish and retrieve the correct ip addresses.
+Basically *lip* is a text-sharing application, where each text is secured with a pre-known id and password. So when starting a "server" and "client" that should communicate, but are unable to find each other (because of e.g. outer restrictions), they can use the set id and password to publish and retrieve the correct ip addresses.
 
 *Mabye an example explains it better.*
 <br>You have an architecture (let's say server-client) that is supposed to be run in a local, dynamic network/environment. Unfortunately, the client cannot find the server through existing solutions (like broadcasts or multicasts) and you don't like typing ip addresses manually or hole punching your network.
@@ -173,10 +175,10 @@ The return JSON examples below are only returned on code `200`.
 **Returns:**
 ```json
 {
-    "info": "hello localip-pub"
+    "info": "hello lip!"
 }
 ```
-- `200`, `info` contains 'hello localip-pub'
+- `200`, `info` contains 'hello lip!'
 
 ---
 
@@ -236,7 +238,7 @@ The return JSON examples below are only returned on code `200`.
 **Requires:**
 ```json
 {
-    "jwt": "<jwt>",
+    "jwt": "<jwt>"
 }
 ```
 

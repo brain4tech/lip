@@ -7,5 +7,5 @@ services:
     environment:
       - LOCALIP_PUB_DBNAME: <MY_DB_NAME>
       - LOCALIP_PUB_JWT_SECRET: <MY_JWT_SECRET>
-    container_name: localip-pub
+    container_name: lip
     restart: always

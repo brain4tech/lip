@@ -1,5 +1,5 @@
 {
-  "name": "localip-pub",
+  "name": "lip",
   "version": "1.0.22",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

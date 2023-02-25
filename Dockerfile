@@ -1,7 +1,7 @@
 FROM oven/bun
 
-RUN mkdir /localip-pub
-WORKDIR /localip-pub
+RUN mkdir /lip
+WORKDIR /lip
 
 ADD src src
 ADD package.json package.json

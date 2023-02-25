@@ -31,7 +31,7 @@ class BunDbHandler implements DbHandlerInterface {
      */
     constructor() {
         // default init status to false
-        const dbEnvName = Bun.env['LOCALIP_PUB_DBNAME']
+        const dbEnvName = Bun.env['LIP_DBNAME']
         this.dbName = ((dbEnvName == null) ? 'db.sqlite' : dbEnvName)
         this.dbInitSuccessful = false
 
