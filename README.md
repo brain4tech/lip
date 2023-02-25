@@ -100,14 +100,14 @@ You'll be better when using this solution in a closed, project-intern environmen
 
 Currently there are several features missing for the project to be "completed":
 
+-  [ ] use bcrypt password hashing instead of sha256 for improved security and/or password salting
+-  [ ] source code documentation
 -  [x] protect reading/writing id's using passwords
 -  [x] use JWTs for regular address updating
 -  [x] add JWT requiring cooldown + modify JWT expire date
--  [ ] use bcrypt password hashing instead of sha256 for improved security and/or password salting
 -  [x] add lifetime for id to free it after certain amount of time (infinite should also be possible)
--  [ ] overview on existing id's and their lifetime
 -  [x] easy deployment with docker and docker compose
--  [ ] source code documentation
+-  [ ] overview on existing id's and their lifetime
 
 Possible features for post project completion could be:
 - a password reset feature, connected to an email
