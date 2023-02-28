@@ -28,7 +28,7 @@ It's ...
     - [Authentication](#authentication)
     - [Lifetimes](#lifetimes)
   - [API endpoint reference](#api-endpoint-reference)
-    - [`/` (GET)](#--get-)
+    - [`/` (GET)](#-get)
     - [`/create`](#create)
     - [`/update`](#update)
     - [`/retrieve`](#retrieve)
@@ -74,8 +74,11 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - LIP_DBNAME: <MY_DB_NAME>
+      - LIP_HOSTNAME: <HOSTNAME>
+      - LIP_PORT: <PORT>
+      - LIP_DB_NAME: <MY_DB_NAME>
       - LIP_JWT_SECRET: <MY_JWT_SECRET>
+      - LIP_TO_STDOUT: <TO_STDOUT>
     container_name: lip
     restart: always
 ```
@@ -88,10 +91,21 @@ docker compose up -d
 and the container should be build and executed automagically.
 
 ### Environment variables
-*lip* creates a new SQLite database called `db.sqlite` at the directory you started the command from. You can change this by setting the `LIP_DBNAME` environment variable to the directory and name of your choice.
 
-JWT generation and validation requires a secret token. *lip* provides a default secret, but it is advised to use your own one by setting the `LIP_JWT_SECRET` environment variable.
+**`LIP_HOSTNAME`**<br>
+Change hostname *lip* starts on. *0.0.0.0* by default.
 
+**`LIP_PORT`**<br>
+Change port *lip* starts on. *8080* by default.
+
+**`LIP_DB_NAME`**<br>
+*lip* creates a new SQLite database called `lip.sqlite` at the directory you started the command from. You can change this by setting the variable to the directory and name of your choice.
+
+**`LIP_JWT_SECRET`**<br>
+JWT generation and validation requires a secret token. *lip* generates a new secret on every startup, but it is advised to use your own one.
+
+**`LIP_TO_STDOUT`**<br>
+In case you do not want *lip* to print anything to the console, set the variable to 'false'. Every other value will keep *lip* printing.
 
 ### Final notice
 You'll be better when using this solution in a closed, project-intern environment. Because of it's small footprint, it can be easily deployed on an existing project server, behind a secure proxy. This way, id's and ip's stay internal and id's do most likely not collide.

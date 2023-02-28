@@ -298,6 +298,10 @@ class EndpointHandler {
         return this.response()
     }
 
+    stop(): void {
+        this.dbHandler.close()
+    }
+
     /**
      * Authenticate passed credentials by comparing them with the database.
      * @param id Id of address.

@@ -1,25 +1,42 @@
 import Elysia, {t} from 'elysia'
 import {jwt} from '@elysiajs/jwt'
 import {EndpointHandler} from './endpointhandler'
+import {Env, printToStdout} from './utils'
+import { lipController } from './lip'
 
-// read JWT secret token from environment variables or set to default
-let jwtSecret: string | undefined = Bun.env['LIP_JWT_SECRET']
-jwtSecret = ((jwtSecret === undefined) ? 'g0hZu73c7IpUJUViMJtRkvdVU8pf7tqCCaVisfJK' : jwtSecret)
+export {lip}
 
+/**
+ * Evaluate environment variables.
+ */
+Env.reevaluate()
+printToStdout(Env.toObject())
+
+/**
+ * Create app and other application components.
+ */
+let endpointHandler = new EndpointHandler()
 const app = new Elysia()
+const lip = new lipController(app)
+
+lip.start()
+
+
+// ------ endpoint and app behaviour definition ------
+
 app.use(
     jwt({
         name: 'jwt',
-        secret: jwtSecret,
+        secret: Env.getJwtSecret(),
         exp: '6m'
     })
 )
-let endpointHandler = new EndpointHandler()
 
 /**
  * Hello world endpoint.
  */
 app.get('/', () => JSON.stringify({info: 'hello lip!'}))
+
 
 /**
  * Create new address.
@@ -43,6 +60,7 @@ app.post('/create', ({body, set}) => {
         }
     })
 
+
 /**
  * Update an address.
  */
@@ -65,6 +83,7 @@ app.post('/update', async ({body, set, jwt}) => {
         }
     })
 
+
 /**
  * Retrieve an address.
  */
@@ -86,6 +105,7 @@ app.post('/retrieve', async ({body, set, jwt}) => {
         }
     })
 
+
 /**
  * Delete an address.
  */
@@ -105,6 +125,7 @@ app.post('/delete', async ({body, set}) => {
             })
         }
     })
+
 
 /**
  * Acquire a JWT.
@@ -127,6 +148,7 @@ app.post('/jwt', async ({body, set, jwt}) => {
         }
     })
 
+
 /**
  * Invalidate a JWT in write mode.
  */
@@ -148,10 +170,13 @@ app.post('/invalidatejwt', async ({body, set, jwt}) => {
         }
     })
 
+
 // some error handling
 app.onError(({code, set, error}) => {
 
-    console.log(`Caught ${error.name}: '${error.message}'`)
+    if (Env.toStdout)
+        printToStdout(`Caught ${error.name}: '${error.message}'`)
+        printToStdout(error)
 
     if (code == 'VALIDATION') {
         set.status = 400
@@ -171,6 +196,8 @@ app.onError(({code, set, error}) => {
     return ''
 })
 
-// start application on 0.0.0.0 and port 8080
-app.listen(8080)
-console.log(`lip running at ${app.server?.hostname}:${app.server?.port}`)
+
+// stop internal handlers and close resources.
+app.onStop(() => {
+    endpointHandler.stop()
+})

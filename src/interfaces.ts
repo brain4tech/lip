@@ -110,4 +110,6 @@ interface DbHandlerInterface {
     updateAddress(id: string, ip_address: string, timestamp: number, lifetime?: number | null): boolean
 
     deleteAddress(id: string): boolean
+
+    close(): void
 }

@@ -1,5 +1,6 @@
 import {AddressDbSet, DbHandlerInterface} from "./interfaces"
 import {Database} from "bun:sqlite";
+import { Env } from "./utils";
 
 export {BunDbHandler}
 
@@ -31,8 +32,7 @@ class BunDbHandler implements DbHandlerInterface {
      */
     constructor() {
         // default init status to false
-        const dbEnvName = Bun.env['LIP_DBNAME']
-        this.dbName = ((dbEnvName == null) ? 'db.sqlite' : dbEnvName)
+        this.dbName = Env.getDbName()
         this.dbInitSuccessful = false
 
         // init database
@@ -125,6 +125,13 @@ class BunDbHandler implements DbHandlerInterface {
 
         this.db.run("DELETE FROM addresses WHERE id = ?", id);
         return true
+    }
+
+    /**
+     * Closes the database connection.
+     */
+    close(): void {
+        this.db.close()
     }
 
     /**
