@@ -80,7 +80,7 @@ class EndpointHandler {
         if (masterPassword === '') return this.response("master password cannot be emtpy", 400)
 
         // validate lifetime
-        if (data.lifetime){
+        if (data.lifetime !== undefined){
             if (!this.checkLifetimeNumber(data.lifetime)) return this.response("invalid lifetime setting", 400)
             lifetime = this.calculateLifetime(data.lifetime)
         }
