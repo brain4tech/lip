@@ -326,7 +326,7 @@ The return JSON examples below are only returned on code `200`.
 {
     "id": "<id>",
     "password": "<access password>",
-    "jwt": "<mode>"
+    "jwt": "<jwt>"
 }
 ``` 
 
