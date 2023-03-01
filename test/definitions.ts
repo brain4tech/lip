@@ -1,11 +1,11 @@
 import {endpointBase} from "./index.test";
 import {randomBytes} from "crypto";
-import {expect, test} from "bun:test";
+import {describe, expect, test} from "bun:test";
 
 export {callIndexEndpoint, callPostEndpoint}
 export {EndpointTest, testSuite}
 export {randomString, randomWhitespacePadding, randomInt}
-export {nowToSeconds}
+export {padString, nowToSeconds}
 
 /**
  * Define global type to use.
@@ -58,12 +58,14 @@ async function callPostEndpoint(endpoint: string, json: object): Promise<Endpoin
  * @param tests Specified tests.
  */
 function testSuite(name: string, endpoint: string, tests: EndpointTest[]): void {
-    tests.forEach( (endpointTest: EndpointTest) => {
-        test(endpointTest.name, async () => {
-            const call = callPostEndpoint(endpoint, endpointTest.body)
-            const result = await Promise.resolve(call)
-            expect(result.code).toEqual(endpointTest.expectedCode)
-            if (endpointTest.expectedBody) expect(result.json).toEqual(endpointTest.expectedBody)
+    describe(name, () => {
+        tests.forEach( (endpointTest: EndpointTest) => {
+            test(endpointTest.name, async () => {
+                const call = callPostEndpoint(endpoint, endpointTest.body)
+                const result = await Promise.resolve(call)
+                expect(result.code).toEqual(endpointTest.expectedCode)
+                if (endpointTest.expectedBody) expect(result.json).toEqual(endpointTest.expectedBody)
+            })
         })
     })
 }
@@ -91,6 +93,16 @@ function randomWhitespacePadding(count: number = 5): string{
     }
 
     return returnString
+}
+
+/**
+ * Add some padding right and left of passed string.
+ * @param content String to pad.
+ * @param paddingCount Amount of padding on both sides.
+ * @returns Padded string.
+ */
+function padString(content: string, paddingCount: number = 5): string {
+    return randomWhitespacePadding(paddingCount) + content + randomWhitespacePadding(paddingCount)
 }
 
 /**

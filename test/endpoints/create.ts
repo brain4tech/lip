@@ -1,295 +1,312 @@
-import {expect, test,} from "bun:test"
-import {callPostEndpoint, testSuite, randomString, randomWhitespacePadding, EndpointTest, randomInt} from "../definitions";
+import {describe, expect, test,} from "bun:test"
+import {callPostEndpoint, testSuite, randomString, randomWhitespacePadding, EndpointTest, randomInt, padString} from "../definitions";
 import {infiniteLifetimeAddress1, infiniteLifetimeAddress2, zeroLifetimeAddress1, oneLifetimeAddress1} from "../addresses";
 
 export {createEndpointTests}
 
 /**
- * Describe all tests here.
+ * Collect all tests.
  */
-const createEndpointTests = () => {
-    testSuite('required schema', '/create', schemaTests)
-    testSuite('required object values', '/create', schemaObjectValueTests)
-    testSuite('optional object values', '/create', schemaLifetimeValueTests)
+function createEndpointTests(): void {
 
-    createEndpointValidCreationWithoutLifetimeTests()
-    createEndpointValidCreationWithLifetimeTests()
+    describe('schema', () => {
+        testSuite('structure', '/create', schemaStructureTests)
+
+        describe('value', () => {
+            testSuite('empty', '/create', schemaEmptyValueTests)
+            testSuite('whitespace', '/create', schemaWhitespaceValuesTests)
+            testSuite('non-value', '/create', schemaNonValueTypeTests)
+        })
+
+        describe('optional', () => {
+            testSuite('lifetime', '/create', schemaLifetimeTests)
+        })
+        
+    })
+    
+    describe('value limits', () => {
+        testSuite('lifetime range', '/create', lifetimeRangeLimitTests)
+    })
+    
+    unsetLifetimeCreationTests()
+    setLifetimeCreationTests()
+    zeroLifetimeCreationTests()
+    oneSecondLifetimeCreationTests()
 }
 
-const schemaTests: EndpointTest[] = [
+const schemaStructureTests: EndpointTest[] = [
     {
-        name: "no body content",
+        name: "none",
         body: {},
         expectedCode: 400,
         expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
     },
 
     {
-        name: "invalid body content",
+        name: "invalid",
         body: {[randomString()]: randomString()},
         expectedCode: 400,
         expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
     },
 
     {
-        name: "invalid body content | no value",
-        body: {[randomString()]: ''},
-        expectedCode: 400,
-        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
-    },
-
-    {
-        name: "id only | non-empty",
+        name: "id",
         body: {id: randomString()},
         expectedCode: 400,
         expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
     },
 
     {
-        name: "access password only | non-empty",
+        name: "access password",
         body: {access_password: randomString()},
         expectedCode: 400,
         expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
     },
 
     {
-        name: "master password only | non-empty",
+        name: "master password",
         body: {master_password: randomString()},
         expectedCode: 400,
         expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
     },
 
     {
-        name: "id and access password only",
+        name: "id + access password",
         body: {id: randomString(), access_password: randomString()},
         expectedCode: 400,
         expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
     },
 
     {
-        name: "id and master password only",
+        name: "id + master password",
         body: {id: randomString(), master_password: randomString()},
         expectedCode: 400,
         expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
     },
 
     {
-        name: "access and master password only",
+        name: "access password + master password",
         body: {access_password: randomString(), master_password: randomString()},
         expectedCode: 400,
         expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
     }
 ]
 
-const schemaObjectValueTests: EndpointTest[] = [
-
-    // leave one attribute emtpy (every attribute once)
+const schemaEmptyValueTests: EndpointTest[] = [
     {
-        name: "empty values",
+        name: "all",
         body: {id: '', access_password: '', master_password: ''},
         expectedCode: 400,
         expectedBody: {info: 'id cannot be emtpy'}
     },
 
     {
-        name: "non-empty id",
+        name: "id",
         body: {id: randomString(), access_password: '', master_password: ''},
         expectedCode: 400,
         expectedBody: {info: 'access password cannot be emtpy'}
     },
 
     {
-        name: "non-empty access password",
+        name: "access password",
         body: {id: '', access_password: randomString(), master_password: ''},
         expectedCode: 400,
         expectedBody: {info: 'id cannot be emtpy'}
     },
 
     {
-        name: "non-empty master password",
+        name: "master password",
         body: {id: '', access_password: '', master_password: randomString()},
         expectedCode: 400,
         expectedBody: {info: 'id cannot be emtpy'}
     },
     
     {
-        name: "empty id",
-        body: {id: '', access_password: randomString(), master_password: randomString()},
+        name: "id + access password",
+        body: {id: randomString(), access_password: randomString(), master_password: ''},
         expectedCode: 400,
-        expectedBody: {info: 'id cannot be emtpy'}
+        expectedBody: {info: 'master password cannot be emtpy'}
     },
-
+    
     {
-        name: "empty access_password",
+        name: "id + master password",
         body: {id: randomString(), access_password: '', master_password: randomString()},
         expectedCode: 400,
         expectedBody: {info: 'access password cannot be emtpy'}
     },
 
     {
-        name: "empty master password",
-        body: {id: randomString(), access_password: randomString(), master_password: ''},
+        name: "access password + master password",
+        body: {id: '', access_password: randomString(), master_password: randomString()},
         expectedCode: 400,
-        expectedBody: {info: 'master password cannot be emtpy'}
+        expectedBody: {info: 'id cannot be emtpy'}
     },
+]
 
-    // set attributes to non-string (integer, sub-object)
+const schemaWhitespaceValuesTests: EndpointTest[] = [
     {
-        name: "non-string id | null",
-        body: {id: null, access_password: randomString(), master_password: randomString()},
-        expectedCode: 400,
-        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
-    },
-
-    {
-        name: "non-string id | number",
-        body: {id: randomInt(300), access_password: randomString(), master_password: randomString()},
-        expectedCode: 400,
-        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
-    },
-
-    {
-        name: "non-string id | object",
-        body: {id: {}, access_password: randomString(), master_password: randomString()},
-        expectedCode: 400,
-        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
-    },
-
-    {
-        name: "non-string id | array",
-        body: {id: [], access_password: randomString(), master_password: randomString()},
-        expectedCode: 400,
-        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
-    },
-
-    {
-        name: "non-string access_password | null",
-        body: {id: randomString(), access_password: null, master_password: randomString()},
-        expectedCode: 400,
-        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
-    },
-
-    {
-        name: "non-string access_password | number",
-        body: {id: randomString(), access_password: randomInt(300), master_password: randomString()},
-        expectedCode: 400,
-        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
-    },
-
-    {
-        name: "non-string access_password | object",
-        body: {id: randomString(), access_password: {}, master_password: randomString()},
-        expectedCode: 400,
-        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
-    },
-
-    {
-        name: "non-string access_password | array",
-        body: {id: randomString(), access_password: [], master_password: randomString()},
-        expectedCode: 400,
-        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
-    },
-
-    {
-        name: "non-string master password | null",
-        body: {id: randomString(), access_password: randomString(), master_password: null},
-        expectedCode: 400,
-        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
-    },
-
-    {
-        name: "non-string master password | number",
-        body: {id: randomString(), access_password: randomString(), master_password: randomInt(300)},
-        expectedCode: 400,
-        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
-    },
-
-    {
-        name: "non-string master password | object",
-        body: {id: randomString(), access_password: randomString(), master_password: {}},
-        expectedCode: 400,
-        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
-    },
-
-    {
-        name: "non-string master password | array",
-        body: {id: randomString(), access_password: randomString(), master_password: []},
-        expectedCode: 400,
-        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
-    },
-
-    // set spaces and newlines in values
-    {
-        name: "padded id",
+        name: "id",
         body: {id: randomWhitespacePadding(), access_password: randomString(), master_password: randomString()},
         expectedCode: 400,
         expectedBody: {info: 'id cannot be emtpy'}
     },
 
     {
-        name: "padded access_password",
+        name: "access password",
         body: {id: randomString(), access_password: randomWhitespacePadding(), master_password: randomString()},
         expectedCode: 400,
         expectedBody: {info: 'access password cannot be emtpy'}
     },
 
     {
-        name: "padded master password",
+        name: "master password",
         body: {id: randomString(), access_password: randomString(), master_password: randomWhitespacePadding()},
         expectedCode: 400,
         expectedBody: {info: 'master password cannot be emtpy'}
-    },
+    }
 ]
 
-const schemaLifetimeValueTests: EndpointTest[] = [
-
-    // non-number values
+const schemaNonValueTypeTests: EndpointTest[] = [
     {
-        name: "non-number lifetime | null",
+        name: "id (null)",
+        body: {id: null, access_password: randomString(), master_password: randomString()},
+        expectedCode: 400,
+        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
+    },
+
+    {
+        name: "id (number)",
+        body: {id: randomInt(300), access_password: randomString(), master_password: randomString()},
+        expectedCode: 400,
+        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
+    },
+
+    {
+        name: "id (object)",
+        body: {id: {}, access_password: randomString(), master_password: randomString()},
+        expectedCode: 400,
+        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
+    },
+
+    {
+        name: "id (array)",
+        body: {id: [], access_password: randomString(), master_password: randomString()},
+        expectedCode: 400,
+        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
+    },
+
+    {
+        name: "access password (null)",
+        body: {id: randomString(), access_password: null, master_password: randomString()},
+        expectedCode: 400,
+        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
+    },
+
+    {
+        name: "access password (number)",
+        body: {id: randomString(), access_password: randomInt(300), master_password: randomString()},
+        expectedCode: 400,
+        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
+    },
+
+    {
+        name: "access password (object)",
+        body: {id: randomString(), access_password: {}, master_password: randomString()},
+        expectedCode: 400,
+        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
+    },
+
+    {
+        name: "access password (array)",
+        body: {id: randomString(), access_password: [], master_password: randomString()},
+        expectedCode: 400,
+        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
+    },
+
+    {
+        name: "master password (null)",
+        body: {id: randomString(), access_password: randomString(), master_password: null},
+        expectedCode: 400,
+        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
+    },
+
+    {
+        name: "master password (number)",
+        body: {id: randomString(), access_password: randomString(), master_password: randomInt(300)},
+        expectedCode: 400,
+        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
+    },
+
+    {
+        name: "master password (object)",
+        body: {id: randomString(), access_password: randomString(), master_password: {}},
+        expectedCode: 400,
+        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
+    },
+
+    {
+        name: "master password (array)",
+        body: {id: randomString(), access_password: randomString(), master_password: []},
+        expectedCode: 400,
+        expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
+    }
+]
+
+const schemaLifetimeTests: EndpointTest[] = [
+    {
+        name: "exists in schema",
+        body: {id: '', access_password: '', master_password: '', lifetime: -1},
+        expectedCode: 400,
+        expectedBody: {info: 'id cannot be emtpy'}
+    },
+
+    {
+        name: "non-value type (null)",
         body: {id: randomString(), access_password: randomString(), master_password: randomString(), lifetime: null},
         expectedCode: 400,
         expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
     },
 
     {
-        name: "non-number lifetime | string",
+        name: "non-value type (string)",
         body: {id: randomString(), access_password: randomString(), master_password: randomString(), lifetime: randomString()},
         expectedCode: 400,
         expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
     },
 
     {
-        name: "non-number lifetime | object",
+        name: "non-value type (object)",
         body: {id: randomString(), access_password: randomString(), master_password: randomString(), lifetime: {}},
         expectedCode: 400,
         expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
     },
 
     {
-        name: "non-number lifetime | array",
+        name: "non-value type (array)",
         body: {id: randomString(), access_password: randomString(), master_password: randomString(), lifetime: []},
         expectedCode: 400,
         expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
-    },
+    }
+]
 
-    // range settings
+const lifetimeRangeLimitTests: EndpointTest[] = [
     {
-        name: "below -1 lifetime (-30)",
-        body: {id: randomString(), access_password: randomString(), master_password: randomString(), lifetime: -30},
+        name: "-2",
+        body: {id: randomString(), access_password: randomString(), master_password: randomString(), lifetime: -2},
         expectedCode: 400,
         expectedBody: {info: 'invalid lifetime setting'}
     },
 
     {
-        name: "over one year lifetime (31536001)",
-        body: {id: randomString(), access_password: randomString(), master_password: randomString(), lifetime: 31536001},
+        name: "31536000 + 1 (1 year)",
+        body: {id: randomString(), access_password: randomString(), master_password: randomString(), lifetime: 31536000 + 1},
         expectedCode: 400,
         expectedBody: {info: 'invalid lifetime setting'}
     },
 ]
 
-function createEndpointValidCreationWithoutLifetimeTests(): void {
-    test("create infinite address 1 (unset lifetime)", async () => {
+function unsetLifetimeCreationTests(): void {
+    test("create infinite address 1 (lifetime unset)", async () => {
         const result = await Promise.resolve(callPostEndpoint('/create', {
             id: infiniteLifetimeAddress1.id,
             access_password: infiniteLifetimeAddress1.accessPassword,
@@ -299,7 +316,7 @@ function createEndpointValidCreationWithoutLifetimeTests(): void {
         expect(result.code).toEqual(200)
     })
 
-    test("double create address 1", async () => {
+    test("redoing address 1 creation fails with: 409 'id already exists'", async () => {
         const result = await Promise.resolve(callPostEndpoint('/create', {
             id: infiniteLifetimeAddress1.id,
             access_password: infiniteLifetimeAddress1.accessPassword,
@@ -310,8 +327,8 @@ function createEndpointValidCreationWithoutLifetimeTests(): void {
     })
 }
 
-function createEndpointValidCreationWithLifetimeTests(): void {
-    test("create infinite address 2 (lifetime = -1)", async () => {
+function setLifetimeCreationTests(): void {
+    test("create infinite address 2 (set lifetime)", async () => {
         const result = await Promise.resolve(callPostEndpoint('/create', {
             id: infiniteLifetimeAddress2.id,
             access_password: infiniteLifetimeAddress2.accessPassword,
@@ -322,7 +339,7 @@ function createEndpointValidCreationWithLifetimeTests(): void {
         expect(result.code).toEqual(200)
     })
 
-    test("double create address 2", async () => {
+    test("redoing address 2 creation fails with: 409 'id already exists'", async () => {
         const result = await Promise.resolve(callPostEndpoint('/create', {
             id: infiniteLifetimeAddress2.id,
             access_password: infiniteLifetimeAddress2.accessPassword,
@@ -333,39 +350,26 @@ function createEndpointValidCreationWithLifetimeTests(): void {
         expect(result.code).toEqual(409)
     })
 
-    // test zero-lifetime
-    test("multiple lifetime == 0 address creation", async () => {
+}
 
-        const result1 = await Promise.resolve(callPostEndpoint('/create', {
-            id: zeroLifetimeAddress1.id,
-            access_password: zeroLifetimeAddress1.accessPassword,
-            master_password: zeroLifetimeAddress1.masterPassword,
-            lifetime: zeroLifetimeAddress1.lifetime
-        }))
-        expect(result1.json).toEqual({info: `created new address '${zeroLifetimeAddress1.id}'`})
-        expect(result1.code).toEqual(200)
+function zeroLifetimeCreationTests(): void {
+    test("five zero-lifetime address creations succeed", async () => {
 
-        const result2 = await Promise.resolve(callPostEndpoint('/create', {
-            id: zeroLifetimeAddress1.id,
-            access_password: zeroLifetimeAddress1.accessPassword,
-            master_password: zeroLifetimeAddress1.masterPassword,
-            lifetime: zeroLifetimeAddress1.lifetime
-        }))
-        expect(result2.json).toEqual({info: `created new address '${zeroLifetimeAddress1.id}'`})
-        expect(result2.code).toEqual(200)
-
-        const result3 = await Promise.resolve(callPostEndpoint('/create', {
-            id: zeroLifetimeAddress1.id,
-            access_password: zeroLifetimeAddress1.accessPassword,
-            master_password: zeroLifetimeAddress1.masterPassword,
-            lifetime: zeroLifetimeAddress1.lifetime
-        }))
-        expect(result3.json).toEqual({info: `created new address '${zeroLifetimeAddress1.id}'`})
-        expect(result3.code).toEqual(200)
+        for (let i: number = 0; i < 5; i++){
+            const result = await Promise.resolve(callPostEndpoint('/create', {
+                id: zeroLifetimeAddress1.id,
+                access_password: zeroLifetimeAddress1.accessPassword,
+                master_password: zeroLifetimeAddress1.masterPassword,
+                lifetime: zeroLifetimeAddress1.lifetime
+            }))
+            expect(result.json).toEqual({info: `created new address '${zeroLifetimeAddress1.id}'`})
+            expect(result.code).toEqual(200)
+        }
     })
+}
 
-    // test 1 second lifetime
-    test("multiple lifetime == 1 address creation", async () => {
+function oneSecondLifetimeCreationTests(): void {
+    test("multiple one-second-lifetime address creation testing", async () => {
 
         const result1 = await Promise.resolve(callPostEndpoint('/create', {
             id: oneLifetimeAddress1.id,

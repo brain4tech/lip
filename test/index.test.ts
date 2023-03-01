@@ -1,7 +1,8 @@
-import {describe, expect, test} from "bun:test"
+import {describe, expect, test, afterAll} from "bun:test"
 import {callIndexEndpoint} from "./definitions";
-import {createEndpointTests} from "./endpoints/create";
-import {jwtEndpointTests} from "./endpoints/jwt";
+import { unlink } from "fs";
+import { createEndpointTests } from "./endpoints/create";
+import { jwtEndpointTests } from "./endpoints/jwt";
 
 import {lip} from '../src'
 
@@ -11,32 +12,21 @@ const endpointBase = `http://${lip.hostname}:${lip.port}`
 console.log("Testing on", endpointBase, '\n')
 
 /**
- * Describe all tests here.
+ * Describe tests here.
  */
-describe("index endpoint", () => {
-    test("just fetchin'", async () => {
-        const result = await Promise.resolve(callIndexEndpoint())
-        expect(result.json).toEqual({info: "hello lip!"})
-        expect(result.code).toEqual(200)
+function runTests(): void {
+
+    // test index ('/') endpoint
+    describe('INDEX', () => {
+        test("just fetchin'", async () => {
+            const result = await Promise.resolve(callIndexEndpoint())
+            expect(result.json).toEqual({info: "hello lip!"})
+            expect(result.code).toEqual(200)
+        })
     })
-
-})
-
-describe("/create", createEndpointTests)
-describe("/jwt", jwtEndpointTests)
-
-/*
-afterAll(() => {
-    console.log("AFTER ALL")
-    lip.stop()
-    deleteTestingDatabase()
-  }
-)  
-
-function deleteTestingDatabase(): void {
-    const dbNameFromEnv = Bun.env['LIP_DB_NAME']
-    console.log("HEHEHEHE")
-    if (!dbNameFromEnv) return
-    unlink(dbNameFromEnv, () => {})
+    
+    describe('CREATE', createEndpointTests)
+    describe('JWT', jwtEndpointTests)
 }
-*/
+
+runTests()
