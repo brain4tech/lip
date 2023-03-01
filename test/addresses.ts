@@ -9,6 +9,8 @@ type lipAddress = {
     accessPassword: string
     masterPassword: string
     lifetime?: number
+    readToken?: string
+    writeToken?: string
 }
 
 const infiniteLifetimeAddress1: lipAddress = {

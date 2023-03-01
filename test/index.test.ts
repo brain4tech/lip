@@ -1,6 +1,8 @@
 import {describe, expect, test} from "bun:test"
 import {callIndexEndpoint} from "./definitions";
-import {createEndpointTests} from "./create-endpoint";
+import {createEndpointTests} from "./endpoints/create";
+import {jwtEndpointTests} from "./endpoints/jwt";
+
 import {lip} from '../src'
 
 export {endpointBase}
@@ -21,6 +23,7 @@ describe("index endpoint", () => {
 })
 
 describe("/create", createEndpointTests)
+describe("/jwt", jwtEndpointTests)
 
 /*
 afterAll(() => {

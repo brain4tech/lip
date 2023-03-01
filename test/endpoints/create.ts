@@ -1,13 +1,12 @@
-import {describe, expect, test,} from "bun:test"
-import {callPostEndpoint, testSuite, randomString, randomWhitespacePadding, EndpointTest, randomInt} from "./definitions";
-import {infiniteLifetimeAddress1, infiniteLifetimeAddress2, zeroLifetimeAddress1, oneLifetimeAddress1} from "./addresses";
-import { nowToSeconds } from "./definitions";
+import {expect, test,} from "bun:test"
+import {callPostEndpoint, testSuite, randomString, randomWhitespacePadding, EndpointTest, randomInt} from "../definitions";
+import {infiniteLifetimeAddress1, infiniteLifetimeAddress2, zeroLifetimeAddress1, oneLifetimeAddress1} from "../addresses";
+
 export {createEndpointTests}
 
 /**
  * Describe all tests here.
  */
-
 const createEndpointTests = () => {
     testSuite('required schema', '/create', schemaTests)
     testSuite('required object values', '/create', schemaObjectValueTests)
@@ -252,7 +251,7 @@ const schemaLifetimeValueTests: EndpointTest[] = [
     },
 ]
 
-const createEndpointValidCreationWithoutLifetimeTests = () => {
+function createEndpointValidCreationWithoutLifetimeTests(): void {
     test("create infinite address 1 (unset lifetime)", async () => {
         const result = await Promise.resolve(callPostEndpoint('/create', {
             id: infiniteLifetimeAddress1.id,
@@ -273,7 +272,7 @@ const createEndpointValidCreationWithoutLifetimeTests = () => {
     })
 }
 
-const createEndpointValidCreationWithLifetimeTests = () => {
+function createEndpointValidCreationWithLifetimeTests(): void {
     test("create infinite address 2 (lifetime = -1)", async () => {
         const result = await Promise.resolve(callPostEndpoint('/create', {
             id: infiniteLifetimeAddress2.id,
