@@ -64,10 +64,8 @@ function testSuite(name: string, endpoint: string, tests: EndpointTest[]): void 
             const result = await Promise.resolve(call)
             expect(result.code).toEqual(endpointTest.expectedCode)
             if (endpointTest.expectedBody) expect(result.json).toEqual(endpointTest.expectedBody)
-
         })
     })
-
 }
 
 /**
