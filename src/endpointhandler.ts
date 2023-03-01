@@ -278,14 +278,22 @@ class EndpointHandler {
      */
     async invalidateJWT(data: JWTInvalidationObject, jwt: any): Promise<EndpointReturnObject>{
 
-        // check if correct id and password
+        // check if valid modes
+        if (data.jwt === ''){
+            return this.response("invalid jwt", 400)
+        }
+
+        // check if jwt is potentially valid
+        if (!jwt.validate(data.jwt)) return this.response("invalid jwt", 400)
+
+        // authenticate user before modifying internal states
         if (!this.authCredentials(data.id, data.password, 'access')){
-            return this.response("invalid authentication", 401)
+            return this.response("invalid combination of id and password", 401)
         }
 
         const validJWT = await this.authJWT(jwt, data.jwt, 'write')
         if (validJWT.id){
-            if (validJWT.id !== data.id) return this.response("invalid authentication", 401)
+            if (validJWT.id !== data.id) return this.response("invalid jwt", 400)
         } else {
             return this.response("jwt already invalid", 400)
         }
