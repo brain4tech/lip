@@ -1,8 +1,8 @@
-import {describe, expect, test, afterAll} from "bun:test"
+import {describe, expect, test} from "bun:test"
 import {callIndexEndpoint} from "./definitions";
-import { unlink } from "fs";
 import { createEndpointTests } from "./endpoints/create";
 import { jwtEndpointTests } from "./endpoints/jwt";
+import { invalidatejwtEndpointTests } from "./endpoints/invalidatejwt";
 
 import {lip} from '../src'
 
@@ -27,6 +27,7 @@ function runTests(): void {
     
     describe('CREATE', createEndpointTests)
     describe('JWT', jwtEndpointTests)
+    describe('INVALIDATE JWT', invalidatejwtEndpointTests)    
 }
 
 runTests()
