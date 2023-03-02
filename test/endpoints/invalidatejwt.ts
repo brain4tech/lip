@@ -23,27 +23,12 @@ async function invalidatejwtEndpointTests(): Promise<void> {
         testSuite('empty jwt validation before authentication', '/invalidatejwt', jwtEvaluationBeforeAuthenticationTests)
     })
     
-    testSuite('authentication', '/invalidatejwt', [], generateInvalidAuthenticationTests, requireTokens)
+    testSuite('authentication', '/invalidatejwt', [], generateInvalidAuthenticationTests)
+    testSuite('authenticated jwt validity', '/invalidatejwt', [], generateInvalidTokenTests)
 
-    testSuite('authenticated jwt validity', '/invalidatejwt', [], generateInvalidTokenTests, requireTokens)
-    // # correct tokens, authorization and token modes
-    // successfull invalidation, retry for 400
-    // create new at /create, but try to invalidate old
-    // invalidate new, and create second new for further usage
-    // valid credentials with invalid jwt
-
-}
-
-function requireTokens(): boolean {
-    console.log("CHECKING infiniteLifetimeAddress1", infiniteLifetimeAddress1)
-
-    if (infiniteLifetimeAddress1.writeToken !== undefined && infiniteLifetimeAddress1.readToken !== undefined) {
-        console.log("OK: token does exist")
-        return true
-    }
-
-    console.log("FALSE: no token")
-    return false
+    successfulInvalidation()
+    createNewJWTButInvalidateOldInvalidation()
+    invalidTokenOnOtherId()
 }
 
 const schemaStructureTests: EndpointTest[] = [
@@ -416,21 +401,21 @@ function generateInvalidTokenTests(): EndpointTest[] {return [
         name: "random jwt",
         body: {id: infiniteLifetimeAddress1.id, password: infiniteLifetimeAddress1.accessPassword, jwt: randomString()},
         expectedCode: 400,
-        expectedBody: {info: 'jwt already invalid'}
+        expectedBody: {info: 'invalid jwt'}
     },
 
     {
         name: "invalid jwt (read mode)",
         body: {id: infiniteLifetimeAddress1.id, password: infiniteLifetimeAddress1.accessPassword, jwt: infiniteLifetimeAddress1.readToken},
         expectedCode: 400,
-        expectedBody: {info: 'jwt already invalid'}
+        expectedBody: {info: 'invalid jwt'}
     },
 
     {
         name: "invalid jwt (other read token)",
         body: {id: infiniteLifetimeAddress1.id, password: infiniteLifetimeAddress1.accessPassword, jwt: infiniteLifetimeAddress2.readToken},
         expectedCode: 400,
-        expectedBody: {info: 'jwt already invalid'}
+        expectedBody: {info: 'invalid jwt'}
     },
 
     {
@@ -440,3 +425,97 @@ function generateInvalidTokenTests(): EndpointTest[] {return [
         expectedBody: {info: 'invalid jwt'}
     },
 ]}
+
+function successfulInvalidation(): void {
+    test("successful invalidation", async () => {
+        const result_first = await Promise.resolve(callPostEndpoint('/invalidatejwt', {
+            id: infiniteLifetimeAddress1.id,
+            password: infiniteLifetimeAddress1.accessPassword,
+            jwt: infiniteLifetimeAddress1.writeToken
+        }))
+        expect(result_first.code).toEqual(200)
+        expect(result_first.json).toEqual({info: ""})
+    })
+
+    test("jwt cannot be invalidated twice", async () => {
+        const result_first = await Promise.resolve(callPostEndpoint('/invalidatejwt', {
+            id: infiniteLifetimeAddress1.id,
+            password: infiniteLifetimeAddress1.accessPassword,
+            jwt: infiniteLifetimeAddress1.writeToken
+        }))
+        expect(result_first.code).toEqual(400)
+        expect(result_first.json).toEqual({info: "invalid jwt"})
+    })
+}
+
+function createNewJWTButInvalidateOldInvalidation(): void {
+    test("invalidation of old token after creating a new one", async () => {
+
+        const oldToken = infiniteLifetimeAddress1.writeToken
+
+        // ensure it's invalid
+        const result_1 = await Promise.resolve(callPostEndpoint('/invalidatejwt', {
+            id: infiniteLifetimeAddress1.id,
+            password: infiniteLifetimeAddress1.accessPassword,
+            jwt: oldToken
+        }))
+        expect(result_1.code).toEqual(400)
+        expect(result_1.json).toEqual({info: "invalid jwt"})
+
+        // generate new token
+        const result_2 = await Promise.resolve(callPostEndpoint('/jwt', {
+            id: infiniteLifetimeAddress1.id,
+            password: infiniteLifetimeAddress1.accessPassword,
+            mode: 'write'
+        }))
+        expect(result_2.code).toEqual(200)
+        expect(result_2.json).not.toEqual({info: ""})
+
+        infiniteLifetimeAddress1.writeToken = result_2.json.info
+
+        // old token is still invalid
+        const result_3 = await Promise.resolve(callPostEndpoint('/invalidatejwt', {
+            id: infiniteLifetimeAddress1.id,
+            password: infiniteLifetimeAddress1.accessPassword,
+            jwt: oldToken
+        }))
+        expect(result_3.code).toEqual(400)
+        expect(result_3.json).toEqual({info: "invalid jwt"})
+
+    })
+}
+
+function invalidTokenOnOtherId(): void {
+    test("invalid token on other id", async () => {
+
+        const token = infiniteLifetimeAddress1.writeToken
+
+        // invalidate old token
+        const result_1 = await Promise.resolve(callPostEndpoint('/invalidatejwt', {
+            id: infiniteLifetimeAddress1.id,
+            password: infiniteLifetimeAddress1.accessPassword,
+            jwt: token
+        }))
+        expect(result_1.code).toEqual(200)
+        expect(result_1.json).toEqual({info: ""})
+
+        // use invalid token on other id
+        const result_2 = await Promise.resolve(callPostEndpoint('/invalidatejwt', {
+            id: infiniteLifetimeAddress2.id,
+            password: infiniteLifetimeAddress2.accessPassword,
+            jwt: token
+        }))
+        expect(result_2.code).toEqual(400)
+        expect(result_2.json).toEqual({info: "invalid jwt"})
+
+        // generate new write token for further use
+        const result_3 = await Promise.resolve(callPostEndpoint('/jwt', {
+            id: infiniteLifetimeAddress1.id,
+            password: infiniteLifetimeAddress1.accessPassword,
+            mode: 'write'
+        }))
+        expect(result_3.code).toEqual(200)
+        expect(result_3.json).not.toEqual({info: ""})
+        infiniteLifetimeAddress1.writeToken = result_3.json.info
+    })
+}
