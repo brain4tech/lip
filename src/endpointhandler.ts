@@ -299,18 +299,25 @@ class EndpointHandler {
         }
 
         const validJWT = await this.authJWT(jwt, token, 'write')
-        if (validJWT.id){
-            if (validJWT.id !== data.id) return this.response("invalid jwt", 400)
-        } else {
-            return this.response("jwt already invalid", 400)
-        }
 
-        if (!this.writeJWTs.has(validJWT.id)){
-            return this.response("jwt already invalid", 400)
-        }
+        if (validJWT.id === undefined) return this.response("invalid jwt", 400)
 
-        this.writeJWTs.delete(validJWT.id)
-        return this.response()
+        // ids do not match
+        if (validJWT.id !== data.id) return this.response("invalid jwt", 400)
+
+        // mapping does not contain id
+        if (!this.writeJWTs.has(validJWT.id)) return this.response("invalid jwt", 400)
+
+        // token is in mapping
+        let tokenInMapping: boolean = false
+        this.writeJWTs.forEach( (value, key) => {
+            if (value !== token) return
+            this.writeJWTs.delete(key)
+            tokenInMapping = true            
+        })
+        if (tokenInMapping) return this.response()
+
+        return this.response("invalid jwt", 400)
     }
 
     stop(): void {
