@@ -57,9 +57,11 @@ async function callPostEndpoint(endpoint: string, json: object): Promise<Endpoin
  * @param endpoint Endpoint to test to.
  * @param tests Specified tests.
  */
-function testSuite(name: string, endpoint: string, tests: EndpointTest[]): void {
+function testSuite(name: string, endpoint: string, staticTests: EndpointTest[] = [], dynamicTests: () => EndpointTest[] = () => {return []}, requirement: () => boolean = () => {return true}): void {
     describe(name, () => {
-        tests.forEach( (endpointTest: EndpointTest) => {
+
+        // static tests
+        staticTests.forEach( (endpointTest: EndpointTest) => {
             test(endpointTest.name, async () => {
                 const call = callPostEndpoint(endpoint, endpointTest.body)
                 const result = await Promise.resolve(call)
@@ -67,6 +69,21 @@ function testSuite(name: string, endpoint: string, tests: EndpointTest[]): void 
                 if (endpointTest.expectedBody) expect(result.json).toEqual(endpointTest.expectedBody)
             })
         })
+
+        // dynamic tests
+        const dynamicEndpointTests = dynamicTests()
+        const testCount: number = dynamicEndpointTests.length
+        for (let i: number = 0; i < testCount; i++){
+            test(dynamicEndpointTests[i].name, async () => {
+                const endpointTest = dynamicTests()[i]
+        
+                const call = callPostEndpoint(endpoint, endpointTest.body)
+                const result = await Promise.resolve(call)
+                expect(result.code).toEqual(endpointTest.expectedCode)
+                if (endpointTest.expectedBody) expect(result.json).toEqual(endpointTest.expectedBody)
+            })
+        }
+
     })
 }
 
