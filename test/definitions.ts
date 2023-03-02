@@ -57,7 +57,7 @@ async function callPostEndpoint(endpoint: string, json: object): Promise<Endpoin
  * @param endpoint Endpoint to test to.
  * @param tests Specified tests.
  */
-function testSuite(name: string, endpoint: string, staticTests: EndpointTest[] = [], dynamicTests: () => EndpointTest[] = () => {return []}, requirement: () => boolean = () => {return true}): void {
+function testSuite(name: string, endpoint: string, staticTests: EndpointTest[] = [], dynamicTests: () => EndpointTest[] = () => {return []}): void {
     describe(name, () => {
 
         // static tests
@@ -83,7 +83,6 @@ function testSuite(name: string, endpoint: string, staticTests: EndpointTest[] =
                 if (endpointTest.expectedBody) expect(result.json).toEqual(endpointTest.expectedBody)
             })
         }
-
     })
 }
 
