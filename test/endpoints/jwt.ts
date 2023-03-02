@@ -27,8 +27,10 @@ function jwtEndpointTests(): void {
     testSuite('authentication', '/jwt', invalidAuthenticationTests)
 
     describe('authentication', masterPasswordUsage)
-    readTokenThrottling()
-    singleWriteToken()
+    readTokenThrottling1()
+    readTokenThrottling2()
+    singleWriteToken1()
+    singleWriteToken2()
 }
 
 const schemaStructureTests: EndpointTest[] = [
@@ -439,7 +441,7 @@ function masterPasswordUsage(): void {
     })
 }
 
-function readTokenThrottling(): void {
+function readTokenThrottling1(): void {
     test("read token throttling", async () => {
 
         const result_first = await Promise.resolve(callPostEndpoint('/jwt', {
@@ -450,7 +452,7 @@ function readTokenThrottling(): void {
         expect(result_first.json).not.toEqual({info: ""})
         expect(result_first.code).toEqual(200)
 
-        infiniteLifetimeAddress1.readToken = result_first.json['info']
+        infiniteLifetimeAddress1.readToken = result_first.json.info
 
         for (let i: number = 0; i < 5; i++){
             const result_loop = await Promise.resolve(callPostEndpoint('/jwt', {
@@ -473,7 +475,41 @@ function readTokenThrottling(): void {
     })
 }
 
-function singleWriteToken(): void {
+function readTokenThrottling2(): void {
+    test("one throttling does not interfer other ids", async () => {
+
+        const result_first = await Promise.resolve(callPostEndpoint('/jwt', {
+            id: infiniteLifetimeAddress2.id,
+            password: infiniteLifetimeAddress2.accessPassword,
+            mode: 'read'
+        }))
+        expect(result_first.json).not.toEqual({info: ""})
+        expect(result_first.code).toEqual(200)
+
+        infiniteLifetimeAddress2.readToken = result_first.json.info
+
+        for (let i: number = 0; i < 5; i++){
+            const result_loop = await Promise.resolve(callPostEndpoint('/jwt', {
+                id: infiniteLifetimeAddress2.id,
+                password: infiniteLifetimeAddress2.accessPassword,
+                mode: 'read'
+            }))
+            expect(result_first.json).not.toEqual({info: ""})
+            expect(result_loop.code).toEqual(200)
+        }
+
+
+        const result_throttled = await Promise.resolve(callPostEndpoint('/jwt', {
+            id: infiniteLifetimeAddress2.id,
+            password: infiniteLifetimeAddress2.accessPassword,
+            mode: 'read'
+        }))
+        expect(result_throttled.json).not.toEqual({info: ''})
+        expect(result_throttled.code).toEqual(429)
+    })
+}
+
+function singleWriteToken1(): void {
     test("single write token", async () => {
 
         const result_first = await Promise.resolve(callPostEndpoint('/jwt', {
@@ -484,12 +520,34 @@ function singleWriteToken(): void {
         expect(result_first.code).toEqual(200)
         expect(result_first.json).not.toEqual({info: ""})
 
-        infiniteLifetimeAddress1.writeToken = result_first.json['info']
-
+        infiniteLifetimeAddress1.writeToken = result_first.json.info
 
         const result_blocked = await Promise.resolve(callPostEndpoint('/jwt', {
             id: infiniteLifetimeAddress1.id,
             password: infiniteLifetimeAddress1.accessPassword,
+            mode: 'write'
+        }))
+        expect(result_blocked.json).toEqual({info: 'write jwt already exists'})
+        expect(result_blocked.code).toEqual(409)
+    })
+}
+
+function singleWriteToken2(): void {
+    test("one write token does not block other ids", async () => {
+
+        const result_first = await Promise.resolve(callPostEndpoint('/jwt', {
+            id: infiniteLifetimeAddress2.id,
+            password: infiniteLifetimeAddress2.accessPassword,
+            mode: 'write'
+        }))
+        expect(result_first.code).toEqual(200)
+        expect(result_first.json).not.toEqual({info: ""})
+
+        infiniteLifetimeAddress2.writeToken = result_first.json.info
+
+        const result_blocked = await Promise.resolve(callPostEndpoint('/jwt', {
+            id: infiniteLifetimeAddress2.id,
+            password: infiniteLifetimeAddress2.accessPassword,
             mode: 'write'
         }))
         expect(result_blocked.json).toEqual({info: 'write jwt already exists'})
