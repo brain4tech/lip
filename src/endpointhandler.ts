@@ -278,20 +278,27 @@ class EndpointHandler {
      */
     async invalidateJWT(data: JWTInvalidationObject, jwt: any): Promise<EndpointReturnObject>{
 
-        // check if valid modes
-        if (data.jwt === ''){
-            return this.response("invalid jwt", 400)
-        }
+        let token: string = data.jwt.trim()
 
-        // check if jwt is potentially valid
-        if (!jwt.validate(data.jwt)) return this.response("invalid jwt", 400)
+        // check if valid modes
+        if (token === '') return this.response("invalid jwt", 400)
+        
+        /*
+
+        // technically, jwt validity should be checked before authentication
+        // (just like mode at /create) but does not achieve wanted goal of
+        // this endpoint (i.e. it cancels the jwt authentication step afterwards)
+
+        if (!jwt.validate(token)) return this.response("invalid jwt", 400)
+        
+        */
 
         // authenticate user before modifying internal states
         if (!this.authCredentials(data.id, data.password, 'access')){
             return this.response("invalid combination of id and password", 401)
         }
 
-        const validJWT = await this.authJWT(jwt, data.jwt, 'write')
+        const validJWT = await this.authJWT(jwt, token, 'write')
         if (validJWT.id){
             if (validJWT.id !== data.id) return this.response("invalid jwt", 400)
         } else {
