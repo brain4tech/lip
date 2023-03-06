@@ -165,7 +165,16 @@ class EndpointHandler {
         let newLifetime: number | null = null
 
         if (ipAddress.lifetime != -1){
-            newLifetime = this.calculateLifetime(ipAddress.lifetime - Math.floor(ipAddress.lastUpdate / 1000))
+            
+            let lifetimeDelta: number = 0
+
+            if (ipAddress.lastUpdate === -1){
+                lifetimeDelta = ipAddress.lifetime - Math.floor(ipAddress.createdOn / 1000)
+            } else {
+                lifetimeDelta = ipAddress.lifetime - Math.floor(ipAddress.lastUpdate / 1000)
+            }
+
+            newLifetime = this.calculateLifetime(lifetimeDelta)
         }
 
         this.dbHandler.updateAddress(authenticated.id, data.ip_address, updateTime, newLifetime)
