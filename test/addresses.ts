@@ -1,5 +1,6 @@
 import {randomString} from "./definitions"
 
+export {lipAddress}
 export {infiniteLifetimeAddress1, infiniteLifetimeAddress2}
 export {zeroLifetimeAddress1, oneLifetimeAddress1}
 

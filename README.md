@@ -35,6 +35,10 @@ It's ...
     - [`/delete`](#delete)
     - [`/jwt`](#jwt)
     - [`/invalidatejwt`](#invalidatejwt)
+- [FAQ](#faq)
+  - [Why Bun and Typescript?](#why-bun-and-typescript)
+  - [How can *lip* be extended towars my needs?](#how-can-lip-be-extended-towars-my-needs)
+  - [Dude, why is the code so bad? Are you a beginner?](#dude-why-is-the-code-so-bad-are-you-a-beginner)
 
 
 ## How to use it
@@ -326,7 +330,7 @@ The return JSON examples below are only returned on code `200`.
 {
     "id": "<id>",
     "password": "<access password>",
-    "jwt": "<mode>"
+    "jwt": "<jwt>"
 }
 ``` 
 
@@ -342,3 +346,14 @@ The return JSON examples below are only returned on code `200`.
 - `401` invalid authentication (id does not exist, wrong password)
 
 ---
+
+## FAQ
+
+### Why Bun and Typescript?
+> ToDo
+
+### How can *lip* be extended towars my needs?
+> ToDo
+
+### Dude, why is the code so bad? Are you a beginner?
+> Kinda, but ToDo

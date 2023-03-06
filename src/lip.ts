@@ -3,12 +3,11 @@ import {Env, printToStdout} from "./utils"
 
 export {lipController}
 
-class lipController{
-    private app: Elysia
-    private hasStarted: boolean
-
+class lipController {
     public hostname: string
     public port: number | string
+    private app: Elysia
+    private hasStarted: boolean
 
     constructor(app: Elysia) {
         this.app = app

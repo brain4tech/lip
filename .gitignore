@@ -50,4 +50,4 @@ package-lock.json
 docker-compose.yaml
 
 # other things
-db.sqlite
+lip.sqlite

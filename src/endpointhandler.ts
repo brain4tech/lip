@@ -1,24 +1,24 @@
 import {BunDbHandler} from "./dbhandler-bun"
 import {
-    DbHandlerInterface,
     AddressDbSet,
-    CredentialAuth,
-    JWTAuthObject,
     AuthReturnObject,
     CreateObject,
-    UpdateObject,
+    CredentialAuth,
+    DbHandlerInterface,
+    EndpointReturnObject,
     JWTAcquiringObject,
+    JWTAuthObject,
     JWTInvalidationObject,
     JWTPayload,
-    EndpointReturnObject
+    UpdateObject
 } from "./interfaces"
 import {isIP} from "net"
-import { createHash } from "crypto"
-import { RateLimiter, RateLimiterOpts } from "limiter"
+import {createHash} from "crypto"
+import {RateLimiter, RateLimiterOpts} from "limiter"
 
 export {EndpointHandler}
 
-const rateLimiterSettings: RateLimiterOpts= {
+const rateLimiterSettings: RateLimiterOpts = {
     tokensPerInterval: 6,
     interval: 'minute',
     fireImmediately: true
@@ -71,7 +71,7 @@ class EndpointHandler {
         let accessPassword: string = data.access_password.trim()
         let masterPassword: string = data.master_password.trim()
         let lifetime: number = -1
-        
+
         // TODO validate id (allowed letters, whitespaces, ...)
         if (id === '') return this.response("id cannot be emtpy", 400)
 
@@ -80,7 +80,7 @@ class EndpointHandler {
         if (masterPassword === '') return this.response("master password cannot be emtpy", 400)
 
         // validate lifetime
-        if (data.lifetime !== undefined){
+        if (data.lifetime !== undefined) {
             if (!this.checkLifetimeNumber(data.lifetime)) return this.response("invalid lifetime setting", 400)
             lifetime = this.calculateLifetime(data.lifetime)
         }
@@ -115,10 +115,12 @@ class EndpointHandler {
         }
 
         const authenticated = await this.authJWT(jwt, data.jwt, 'write')
-        if (authenticated.code != 0){
+        if (authenticated.code != 0) {
             let message: string = ""
-            switch (authenticated.code){
-                case 5: message = "invalid token mode"; break;
+            switch (authenticated.code) {
+                case 5:
+                    message = "invalid token mode";
+                    break;
                 default: {
                     // invalid jwt (either expired or too old)
                     // remove from jwt mapping
@@ -129,7 +131,7 @@ class EndpointHandler {
                         }
                     )
 
-                    if (idToDelete) this.writeJWTs.delete(idToDelete)                  
+                    if (idToDelete) this.writeJWTs.delete(idToDelete)
                     message = "invalid authentication"
                     break
                 }
@@ -138,25 +140,43 @@ class EndpointHandler {
             return this.response(message, 401)
         }
 
-        if (!authenticated.id){
+        if (!authenticated.id) {
             return this.response("invalid authentication", 401)
         }
 
         const ipAddress = this.dbHandler.retrieveAddress(authenticated.id)
-        if (ipAddress == null){
+        if (ipAddress == null) {
             return this.response("invalid authentication", 401)
         }
 
-        // if write token is valid, but not in write mapping
-        if (!this.writeJWTs.has(authenticated.id)){
+        // if write token is valid, but id not in write mapping
+        if (!this.writeJWTs.has(authenticated.id)) {
             return this.response("invalid authentication", 401)
         }
+
+        // token value is in mapping
+        let tokenInMapping: boolean = false
+        this.writeJWTs.forEach((value, key) => {
+            if (value !== data.jwt) return
+            if (key !== authenticated.id) return
+            tokenInMapping = true
+        })
+        if (!tokenInMapping) return this.response("invalid authentication", 401)
 
         const updateTime = Date.now()
         let newLifetime: number | null = null
 
-        if (ipAddress.lifetime != -1){
-            newLifetime = this.calculateLifetime(ipAddress.lifetime - Math.floor(ipAddress.lastUpdate / 1000))
+        if (ipAddress.lifetime != -1) {
+
+            let lifetimeDelta: number = 0
+
+            if (ipAddress.lastUpdate === -1) {
+                lifetimeDelta = ipAddress.lifetime - Math.floor(ipAddress.createdOn / 1000)
+            } else {
+                lifetimeDelta = ipAddress.lifetime - Math.floor(ipAddress.lastUpdate / 1000)
+            }
+
+            newLifetime = this.calculateLifetime(lifetimeDelta)
         }
 
         this.dbHandler.updateAddress(authenticated.id, data.ip_address, updateTime, newLifetime)
@@ -172,24 +192,28 @@ class EndpointHandler {
      * @param jwt JWT handling instance.
      */
     async retrieveAddress(data: JWTAuthObject, jwt: any): Promise<EndpointReturnObject> {
-        
+
         const authenticated = await this.authJWT(jwt, data.jwt, 'read')
-        if (authenticated.code != 0){
+        if (authenticated.code != 0) {
             let message: string = ""
-            switch (authenticated.code){
-                case 5: message = "invalid token mode"; break;
-                default: message = "invalid authentication"; break;
+            switch (authenticated.code) {
+                case 5:
+                    message = "invalid token mode";
+                    break;
+                default:
+                    message = "invalid authentication";
+                    break;
             }
 
             return this.response(message, 401)
         }
 
-        if (!authenticated.id){
+        if (!authenticated.id) {
             return this.response("invalid authentication", 401)
         }
 
         const ipAddress = this.dbHandler.retrieveAddress(authenticated.id)
-        if (ipAddress == null){
+        if (ipAddress == null) {
             return this.response("invalid authentication", 401)
         }
 
@@ -205,7 +229,7 @@ class EndpointHandler {
      */
     deleteAddress(data: CredentialAuth): EndpointReturnObject {
 
-        if (!this.authCredentials(data.id, data.password, 'master')){
+        if (!this.authCredentials(data.id, data.password, 'master')) {
             return this.response("invalid combination of id and password", 401)
         }
 
@@ -223,23 +247,23 @@ class EndpointHandler {
      * @param data Request body parsed into an object.
      * @param jwt JWT handling instance.
      */
-    async acquireJWT(data: JWTAcquiringObject, jwt: any): Promise<EndpointReturnObject>{
+    async acquireJWT(data: JWTAcquiringObject, jwt: any): Promise<EndpointReturnObject> {
 
         // check if valid modes
-        if (data.mode != 'write' && data.mode != 'read'){
+        if (data.mode != 'write' && data.mode != 'read') {
             return this.response("invalid jwt mode", 400)
         }
 
-        if (!this.authCredentials(data.id, data.password, 'access')){
+        if (!this.authCredentials(data.id, data.password, 'access')) {
             return this.response("invalid combination of id and password", 401)
         }
 
         // set rate limiter for acquiring read tokens
-        if (data.mode === 'read'){
+        if (data.mode === 'read') {
 
             const rateLimiter = this.readTokenGenLimiter.get(data.id)
 
-            if (rateLimiter){
+            if (rateLimiter) {
                 const remainingRequests: number = await rateLimiter.removeTokens(1)
                 if (remainingRequests < 0) return this.response("too many acquiring requests", 429)
             } else {
@@ -251,7 +275,7 @@ class EndpointHandler {
         }
 
         // prevent multiple write tokens
-        if (data.mode === 'write' && this.writeJWTs.has(data.id)){
+        if (data.mode === 'write' && this.writeJWTs.has(data.id)) {
             const authenticated = await this.authJWT(jwt, this.writeJWTs.get(data.id), 'write')
             if (authenticated.code == 0) {
                 return this.response("write jwt already exists", 409)
@@ -276,26 +300,48 @@ class EndpointHandler {
      * @param data Request body parsed into an object.
      * @param jwt JWT handling instance.
      */
-    async invalidateJWT(data: JWTInvalidationObject, jwt: any): Promise<EndpointReturnObject>{
+    async invalidateJWT(data: JWTInvalidationObject, jwt: any): Promise<EndpointReturnObject> {
 
-        // check if correct id and password
-        if (!this.authCredentials(data.id, data.password, 'access')){
-            return this.response("invalid authentication", 401)
+        let token: string = data.jwt.trim()
+
+        // check if valid modes
+        if (token === '') return this.response("invalid jwt", 400)
+
+        /*
+
+        // technically, jwt validity should be checked before authentication
+        // (just like mode at /create) but does not achieve wanted goal of
+        // this endpoint (i.e. it cancels the jwt authentication step afterwards)
+
+        if (!jwt.validate(token)) return this.response("invalid jwt", 400)
+        
+        */
+
+        // authenticate user before modifying internal states
+        if (!this.authCredentials(data.id, data.password, 'access')) {
+            return this.response("invalid combination of id and password", 401)
         }
 
-        const validJWT = await this.authJWT(jwt, data.jwt, 'write')
-        if (validJWT.id){
-            if (validJWT.id !== data.id) return this.response("invalid authentication", 401)
-        } else {
-            return this.response("jwt already invalid", 400)
-        }
+        const validJWT = await this.authJWT(jwt, token, 'write')
 
-        if (!this.writeJWTs.has(validJWT.id)){
-            return this.response("jwt already invalid", 400)
-        }
+        if (validJWT.id === undefined) return this.response("invalid jwt", 400)
 
-        this.writeJWTs.delete(validJWT.id)
-        return this.response()
+        // ids do not match
+        if (validJWT.id !== data.id) return this.response("invalid jwt", 400)
+
+        // mapping does not contain id
+        if (!this.writeJWTs.has(validJWT.id)) return this.response("invalid jwt", 400)
+
+        // token is in mapping
+        let tokenInMapping: boolean = false
+        this.writeJWTs.forEach((value, key) => {
+            if (value !== token) return
+            this.writeJWTs.delete(key)
+            tokenInMapping = true
+        })
+        if (tokenInMapping) return this.response()
+
+        return this.response("invalid jwt", 400)
     }
 
     stop(): void {
@@ -317,16 +363,21 @@ class EndpointHandler {
         }
 
         let passwordsMatch: boolean = false
-        switch (type){
-            case 'access': passwordsMatch = this.comparePasswordWithHash(password, ipAddress.accessPasswordHash); break;
-            case 'master': passwordsMatch = this.comparePasswordWithHash(password, ipAddress.masterPasswordHash); break;
-            default: break;
+        switch (type) {
+            case 'access':
+                passwordsMatch = this.comparePasswordWithHash(password, ipAddress.accessPasswordHash);
+                break;
+            case 'master':
+                passwordsMatch = this.comparePasswordWithHash(password, ipAddress.masterPasswordHash);
+                break;
+            default:
+                break;
         }
 
         if (!passwordsMatch) return false
 
         // lifetime expired
-        if (ipAddress.lifetime != -1 && Math.floor(Date.now() / 1000) > ipAddress.lifetime){
+        if (ipAddress.lifetime != -1 && Math.floor(Date.now() / 1000) > ipAddress.lifetime) {
             this.dbHandler.deleteAddress(ipAddress.id)
             this.readTokenGenLimiter.delete(ipAddress.id)
             return false
@@ -343,14 +394,14 @@ class EndpointHandler {
      * @private
      */
     private async authJWT(verifier: any, jwt: string | undefined, requiredTokenMode: string): Promise<AuthReturnObject> {
-        
+
         if (!jwt) return {code: 1}
 
         const token: JWTPayload = await verifier.verify(jwt)
         if (!token) return {code: 1}
 
         const address = this.dbHandler.retrieveAddress(token.id)
-        
+
         // id in token does not exist
         if (!address) return {code: 2}
 
@@ -358,7 +409,7 @@ class EndpointHandler {
         if (address.createdOn > token.created_on) return {code: 3}
 
         // lifetime expired
-        if (address.lifetime != -1 && Math.floor(Date.now() / 1000) > address.lifetime){
+        if (address.lifetime != -1 && Math.floor(Date.now() / 1000) > address.lifetime) {
             this.dbHandler.deleteAddress(address.id)
             this.readTokenGenLimiter.delete(address.id)
             return {code: 4}
