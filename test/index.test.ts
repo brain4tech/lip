@@ -1,10 +1,12 @@
 import {describe, expect, test} from "bun:test"
 import {callIndexEndpoint} from "./definitions";
-import { createEndpointTests } from "./endpoints/create";
-import { jwtEndpointTests } from "./endpoints/jwt";
-import { invalidatejwtEndpointTests } from "./endpoints/invalidatejwt";
-import { updateEndpointTests } from "./endpoints/update";
-import { retrieveEndpointTests } from "./endpoints/retrieve";
+import {createEndpointTests} from "./endpoints/create";
+import {jwtEndpointTests} from "./endpoints/jwt";
+import {invalidatejwtEndpointTests} from "./endpoints/invalidatejwt";
+import {updateEndpointTests} from "./endpoints/update";
+import {retrieveEndpointTests} from "./endpoints/retrieve";
+import {jwtValidityTests} from "./miscellaneous/jwt-validty";
+import {deleteEndpointTests} from "./endpoints/delete";
 
 import {lip} from '../src'
 
@@ -26,15 +28,15 @@ function runTests(): void {
             expect(result.code).toEqual(200)
         })
     })
-    
+
     describe('CREATE', createEndpointTests)
     describe('JWT', jwtEndpointTests)
     describe('INVALIDATE JWT', invalidatejwtEndpointTests)
     describe('UPDATE', updateEndpointTests)
     describe('RETRIEVE', retrieveEndpointTests)
+    describe('DELETE', deleteEndpointTests)
 
-    // test jwt lifetime when ip address is expired
-    // test jwt lifetimes when address was recreated
+    describe('JWT VALIDITY TESTS', jwtValidityTests)
 }
 
 runTests()
