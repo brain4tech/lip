@@ -1,6 +1,6 @@
 import {AddressDbSet, DbHandlerInterface} from "./interfaces"
 import {Database} from "bun:sqlite";
-import { Env } from "./utils";
+import {Env} from "./utils";
 
 export {BunDbHandler}
 

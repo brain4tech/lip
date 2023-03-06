@@ -1,7 +1,15 @@
-
-
 import {describe, expect, test,} from "bun:test"
-import {callPostEndpoint, testSuite, randomString, randomWhitespacePadding, EndpointTest, randomInt, randomIpv4Address, randomIpv6Address, regenerateWriteJWT} from "../definitions";
+import {
+    callPostEndpoint,
+    EndpointTest,
+    randomInt,
+    randomIpv4Address,
+    randomIpv6Address,
+    randomString,
+    randomWhitespacePadding,
+    regenerateWriteJWT,
+    testSuite
+} from "../definitions";
 import {infiniteLifetimeAddress1, infiniteLifetimeAddress2} from "../addresses";
 
 export {updateEndpointTests}
@@ -18,18 +26,18 @@ async function updateEndpointTests(): Promise<void> {
             testSuite('empty', '/update', schemaEmptyValueTests)
             testSuite('whitespace', '/update', schemaWhitespaceValuesTests)
             testSuite('non-value', '/update', schemaNonValueTypeTests)
-        })        
+        })
     })
-    
+
     describe('value limits', () => {
         testSuite('empty ip address validation before authentication', '/update', ipAddressEvaluationBeforeAuthenticationTests)
 
         testSuite('ip address validity', '/update', ipAddressValidty)
     })
-    
+
     testSuite('authentication', '/update', [], generateInvalidAuthenticationTests)
     testSuite('invalid jwt authentication', '/update', [], generateInvalidAuthenticationTests)
-    
+
     invalidJWTAuthentication()
     successfulUpdates()
 
@@ -93,7 +101,7 @@ const schemaEmptyValueTests: EndpointTest[] = [
         expectedCode: 400,
         expectedBody: {info: 'invalid ip address'}
     },
-    
+
 ]
 
 const schemaWhitespaceValuesTests: EndpointTest[] = [
@@ -116,7 +124,7 @@ const schemaNonValueTypeTests: EndpointTest[] = [
 
     {
         name: "jwt (null)",
-        body: { jwt: null, ip_address: randomString()},
+        body: {jwt: null, ip_address: randomString()},
         expectedCode: 400,
         expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
     },
@@ -278,45 +286,47 @@ const ipAddressValidty: EndpointTest[] = [
         expectedCode: 401,
         expectedBody: {info: 'invalid authentication'}
     },
-    
+
 ]
 
-function generateInvalidAuthenticationTests(): EndpointTest[] {return [
-    {
-        name: "empty jwt + empty ip address",
-        body: {jwt: '', ip_address: ''},
-        expectedCode: 400,
-        expectedBody: {info: 'invalid ip address'}
-    },
+function generateInvalidAuthenticationTests(): EndpointTest[] {
+    return [
+        {
+            name: "empty jwt + empty ip address",
+            body: {jwt: '', ip_address: ''},
+            expectedCode: 400,
+            expectedBody: {info: 'invalid ip address'}
+        },
 
-    {
-        name: "empty jwt + random ip address",
-        body: {jwt: '', ip_address: randomIpv4Address()},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid authentication'}
-    },
+        {
+            name: "empty jwt + random ip address",
+            body: {jwt: '', ip_address: randomIpv4Address()},
+            expectedCode: 401,
+            expectedBody: {info: 'invalid authentication'}
+        },
 
-    {
-        name: "random jwt + empty ip address",
-        body: {jwt: randomString(), ip_address: randomIpv4Address()},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid authentication'}
-    },
-    
-    {
-        name: "access jwt + random ip address",
-        body: {jwt: infiniteLifetimeAddress1.accessPassword, ip_address: randomIpv4Address()},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid authentication'}
-    },
-    
-    {
-        name: "other access jwt + random ip address",
-        body: {jwt: infiniteLifetimeAddress2.accessPassword, ip_address: randomIpv4Address()},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid authentication'}
-    }
-]}
+        {
+            name: "random jwt + empty ip address",
+            body: {jwt: randomString(), ip_address: randomIpv4Address()},
+            expectedCode: 401,
+            expectedBody: {info: 'invalid authentication'}
+        },
+
+        {
+            name: "access jwt + random ip address",
+            body: {jwt: infiniteLifetimeAddress1.accessPassword, ip_address: randomIpv4Address()},
+            expectedCode: 401,
+            expectedBody: {info: 'invalid authentication'}
+        },
+
+        {
+            name: "other access jwt + random ip address",
+            body: {jwt: infiniteLifetimeAddress2.accessPassword, ip_address: randomIpv4Address()},
+            expectedCode: 401,
+            expectedBody: {info: 'invalid authentication'}
+        }
+    ]
+}
 
 function invalidJWTAuthentication(): void {
 

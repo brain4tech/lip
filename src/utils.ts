@@ -2,7 +2,7 @@ import {randomBytes} from "crypto"
 
 export {Env, printToStdout}
 
-class Env{
+class Env {
     public static hostname: string
     public static port: number
     public static dbName: string
@@ -24,7 +24,7 @@ class Env{
      * Convert static variables into an object.
      * @returns An object containing all read environment variables.
      */
-    public static toObject(): object{
+    public static toObject(): object {
         return {
             hostname: Env.hostname,
             port: Env.port,

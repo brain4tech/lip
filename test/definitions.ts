@@ -2,6 +2,7 @@ import {endpointBase} from "./index.test";
 import {randomBytes} from "crypto";
 import {describe, expect, test} from "bun:test";
 import {lipAddress} from "./addresses";
+
 var randomIpv6 = require('random-ipv6');
 
 export {callIndexEndpoint, callPostEndpoint}
@@ -59,13 +60,16 @@ async function callPostEndpoint(endpoint: string, json: object): Promise<Endpoin
  * Run an array of endpoint tests.
  * @param name Name of test suite.
  * @param endpoint Endpoint to test to.
- * @param tests Specified tests.
+ * @param staticTests Array of static tests to loop through.
+ * @param dynamicTests Function that returns a list of tests to run through.
  */
-function testSuite(name: string, endpoint: string, staticTests: EndpointTest[] = [], dynamicTests: () => EndpointTest[] = () => {return []}): void {
+function testSuite(name: string, endpoint: string, staticTests: EndpointTest[] = [], dynamicTests: () => EndpointTest[] = () => {
+    return []
+}): void {
     describe(name, () => {
 
         // static tests
-        staticTests.forEach( (endpointTest: EndpointTest) => {
+        staticTests.forEach((endpointTest: EndpointTest) => {
             test(endpointTest.name, async () => {
                 const call = callPostEndpoint(endpoint, endpointTest.body)
                 const result = await Promise.resolve(call)
@@ -77,10 +81,10 @@ function testSuite(name: string, endpoint: string, staticTests: EndpointTest[] =
         // dynamic tests
         const dynamicEndpointTests = dynamicTests()
         const testCount: number = dynamicEndpointTests.length
-        for (let i: number = 0; i < testCount; i++){
+        for (let i: number = 0; i < testCount; i++) {
             test(dynamicEndpointTests[i].name, async () => {
                 const endpointTest = dynamicTests()[i]
-        
+
                 const call = callPostEndpoint(endpoint, endpointTest.body)
                 const result = await Promise.resolve(call)
                 expect(result.code).toEqual(endpointTest.expectedCode)
@@ -95,7 +99,7 @@ function testSuite(name: string, endpoint: string, staticTests: EndpointTest[] =
  * @param halfLength Amount of characters / 2
  * @returns The generated String
  */
-function randomString(halfLength: number = 5): string{
+function randomString(halfLength: number = 5): string {
     return randomBytes(halfLength).toString('hex')
 }
 
@@ -103,7 +107,7 @@ function randomString(halfLength: number = 5): string{
  * Generate a random ipv4 address.
  * @returns The generated address
  */
-function randomIpv4Address(): string{
+function randomIpv4Address(): string {
     return `${randomInt(256)}.${randomInt(256)}.${randomInt(256)}.${randomInt(256)}`
 }
 
@@ -111,7 +115,7 @@ function randomIpv4Address(): string{
  * Generate a random ipv6 address.
  * @returns The generated address
  */
-function randomIpv6Address(): string{
+function randomIpv6Address(): string {
     return randomIpv6().toString()
 }
 
@@ -120,11 +124,11 @@ function randomIpv6Address(): string{
  * @param count Amount of padding.
  * @returns The generated string.
  */
-function randomWhitespacePadding(count: number = 5): string{
+function randomWhitespacePadding(count: number = 5): string {
     const paddingChars = [' ', '\n', '\t', '\r']
 
     let returnString: string = ''
-    for (let i: number = 0; i < count; i++){
+    for (let i: number = 0; i < count; i++) {
         returnString += paddingChars[randomInt(paddingChars.length - 1)]
     }
 
@@ -146,7 +150,7 @@ function padString(content: string, paddingCount: number = 5): string {
  * @param max Upper limit.
  * @returns Number.
  */
-function randomInt(max: number): number{
+function randomInt(max: number): number {
     return Math.floor(Math.random() * max)
 }
 

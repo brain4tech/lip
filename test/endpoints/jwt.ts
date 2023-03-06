@@ -1,5 +1,12 @@
 import {describe, expect, test,} from "bun:test"
-import {callPostEndpoint, testSuite, randomString, randomWhitespacePadding, EndpointTest, randomInt} from "../definitions";
+import {
+    callPostEndpoint,
+    EndpointTest,
+    randomInt,
+    randomString,
+    randomWhitespacePadding,
+    testSuite
+} from "../definitions";
 import {infiniteLifetimeAddress1, infiniteLifetimeAddress2} from "../addresses";
 
 export {jwtEndpointTests}
@@ -16,9 +23,9 @@ function jwtEndpointTests(): void {
             testSuite('empty', '/jwt', schemaEmptyValueTests)
             testSuite('whitespace', '/jwt', schemaWhitespaceValuesTests)
             testSuite('non-value', '/jwt', schemaNonValueTypeTests)
-        })        
+        })
     })
-    
+
     describe('value limits', () => {
         testSuite('mode evaluation before authentication', '/jwt', modeEvaluationBeforeAuthenticationTests)
         testSuite('allowed mode values', '/jwt', jwtTokenModeTests)
@@ -119,14 +126,14 @@ const schemaEmptyValueTests: EndpointTest[] = [
         expectedCode: 400,
         expectedBody: {info: 'invalid jwt mode'}
     },
-    
+
     {
         name: "id + password",
         body: {id: randomString(), password: randomString(), mode: ''},
         expectedCode: 400,
         expectedBody: {info: 'invalid jwt mode'}
     },
-    
+
     {
         name: "id + mode",
         body: {id: randomString(), password: '', mode: randomString()},
@@ -341,7 +348,7 @@ const invalidAuthenticationTests: EndpointTest[] = [
         expectedCode: 401,
         expectedBody: {info: 'invalid combination of id and password'}
     },
-    
+
     {
         name: "empty id + access password",
         body: {id: '', password: infiniteLifetimeAddress1.accessPassword, mode: 'read'},
@@ -362,7 +369,7 @@ const invalidAuthenticationTests: EndpointTest[] = [
         expectedCode: 401,
         expectedBody: {info: 'invalid combination of id and password'}
     },
-    
+
     {
         name: "random id + random password",
         body: {id: randomString(), password: randomString(), mode: 'read'},
@@ -383,14 +390,14 @@ const invalidAuthenticationTests: EndpointTest[] = [
         expectedCode: 401,
         expectedBody: {info: 'invalid combination of id and password'}
     },
-  
+
     {
         name: "other id + empty password",
         body: {id: infiniteLifetimeAddress2.id, password: '', mode: 'read'},
         expectedCode: 401,
         expectedBody: {info: 'invalid combination of id and password'}
     },
-    
+
     {
         name: "other id + random password",
         body: {id: infiniteLifetimeAddress2.id, password: randomString(), mode: 'read'},
@@ -454,7 +461,7 @@ function readTokenThrottling1(): void {
 
         infiniteLifetimeAddress1.readToken = result_first.json.info
 
-        for (let i: number = 0; i < 5; i++){
+        for (let i: number = 0; i < 5; i++) {
             const result_loop = await Promise.resolve(callPostEndpoint('/jwt', {
                 id: infiniteLifetimeAddress1.id,
                 password: infiniteLifetimeAddress1.accessPassword,
@@ -488,7 +495,7 @@ function readTokenThrottling2(): void {
 
         infiniteLifetimeAddress2.readToken = result_first.json.info
 
-        for (let i: number = 0; i < 5; i++){
+        for (let i: number = 0; i < 5; i++) {
             const result_loop = await Promise.resolve(callPostEndpoint('/jwt', {
                 id: infiniteLifetimeAddress2.id,
                 password: infiniteLifetimeAddress2.accessPassword,

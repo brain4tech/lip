@@ -1,5 +1,12 @@
 import {describe, expect, test,} from "bun:test"
-import {callPostEndpoint, testSuite, randomString, randomWhitespacePadding, EndpointTest, randomInt} from "../definitions";
+import {
+    callPostEndpoint,
+    EndpointTest,
+    randomInt,
+    randomString,
+    randomWhitespacePadding,
+    testSuite
+} from "../definitions";
 import {infiniteLifetimeAddress1, infiniteLifetimeAddress2} from "../addresses";
 
 export {invalidatejwtEndpointTests}
@@ -16,13 +23,13 @@ async function invalidatejwtEndpointTests(): Promise<void> {
             testSuite('empty', '/invalidatejwt', schemaEmptyValueTests)
             testSuite('whitespace', '/invalidatejwt', schemaWhitespaceValuesTests)
             testSuite('non-value', '/invalidatejwt', schemaNonValueTypeTests)
-        })        
+        })
     })
-    
+
     describe('value limits', () => {
         testSuite('empty jwt validation before authentication', '/invalidatejwt', jwtEvaluationBeforeAuthenticationTests)
     })
-    
+
     testSuite('authentication', '/invalidatejwt', [], generateInvalidAuthenticationTests)
     testSuite('authenticated jwt validity', '/invalidatejwt', [], generateInvalidTokenTests)
 
@@ -117,14 +124,14 @@ const schemaEmptyValueTests: EndpointTest[] = [
         expectedCode: 401,
         expectedBody: {info: 'invalid combination of id and password'}
     },
-    
+
     {
         name: "id + password",
         body: {id: randomString(), password: randomString(), jwt: ''},
         expectedCode: 400,
         expectedBody: {info: 'invalid jwt'}
     },
-    
+
     {
         name: "id + jwt",
         body: {id: randomString(), password: '', jwt: randomString()},
@@ -295,136 +302,176 @@ const jwtEvaluationBeforeAuthenticationTests: EndpointTest[] = [
     */
 ]
 
-function generateInvalidAuthenticationTests(): EndpointTest[] {return [
-    {
-        name: "empty id + empty password",
-        body: {id: '', password: '', jwt: infiniteLifetimeAddress1.writeToken},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid combination of id and password'}
-    },
+function generateInvalidAuthenticationTests(): EndpointTest[] {
+    return [
+        {
+            name: "empty id + empty password",
+            body: {id: '', password: '', jwt: infiniteLifetimeAddress1.writeToken},
+            expectedCode: 401,
+            expectedBody: {info: 'invalid combination of id and password'}
+        },
 
-    {
-        name: "empty id + random password",
-        body: {id: '', password: randomString(), jwt: infiniteLifetimeAddress1.writeToken},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid combination of id and password'}
-    },
-    
-    {
-        name: "empty id + access password",
-        body: {id: '', password: infiniteLifetimeAddress1.accessPassword, jwt: infiniteLifetimeAddress1.writeToken},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid combination of id and password'}
-    },
+        {
+            name: "empty id + random password",
+            body: {id: '', password: randomString(), jwt: infiniteLifetimeAddress1.writeToken},
+            expectedCode: 401,
+            expectedBody: {info: 'invalid combination of id and password'}
+        },
 
-    {
-        name: "empty id + master password",
-        body: {id: '', password: infiniteLifetimeAddress1.masterPassword, jwt: infiniteLifetimeAddress1.writeToken},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid combination of id and password'}
-    },
+        {
+            name: "empty id + access password",
+            body: {id: '', password: infiniteLifetimeAddress1.accessPassword, jwt: infiniteLifetimeAddress1.writeToken},
+            expectedCode: 401,
+            expectedBody: {info: 'invalid combination of id and password'}
+        },
 
-    {
-        name: "random id + empty password",
-        body: {id: randomString(), password: '', jwt: infiniteLifetimeAddress1.writeToken},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid combination of id and password'}
-    },
-    
-    {
-        name: "random id + random password",
-        body: {id: randomString(), password: randomString(), jwt: infiniteLifetimeAddress1.writeToken},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid combination of id and password'}
-    },
+        {
+            name: "empty id + master password",
+            body: {id: '', password: infiniteLifetimeAddress1.masterPassword, jwt: infiniteLifetimeAddress1.writeToken},
+            expectedCode: 401,
+            expectedBody: {info: 'invalid combination of id and password'}
+        },
 
-    {
-        name: "random id + access password",
-        body: {id: randomString(), password: infiniteLifetimeAddress1.accessPassword, jwt: infiniteLifetimeAddress1.writeToken},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid combination of id and password'}
-    },
+        {
+            name: "random id + empty password",
+            body: {id: randomString(), password: '', jwt: infiniteLifetimeAddress1.writeToken},
+            expectedCode: 401,
+            expectedBody: {info: 'invalid combination of id and password'}
+        },
 
-    {
-        name: "random id + master password",
-        body: {id: randomString(), password: infiniteLifetimeAddress1.masterPassword, jwt: infiniteLifetimeAddress1.writeToken},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid combination of id and password'}
-    },
-  
-    {
-        name: "other id + empty password",
-        body: {id: infiniteLifetimeAddress2.id, password: '', jwt: infiniteLifetimeAddress1.writeToken},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid combination of id and password'}
-    },
-    
-    {
-        name: "other id + random password",
-        body: {id: infiniteLifetimeAddress2.id, password: randomString(), jwt: infiniteLifetimeAddress1.writeToken},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid combination of id and password'}
-    },
+        {
+            name: "random id + random password",
+            body: {id: randomString(), password: randomString(), jwt: infiniteLifetimeAddress1.writeToken},
+            expectedCode: 401,
+            expectedBody: {info: 'invalid combination of id and password'}
+        },
 
-    {
-        name: "other id + access password",
-        body: {id: infiniteLifetimeAddress2.id, password: infiniteLifetimeAddress1.accessPassword, jwt: infiniteLifetimeAddress1.writeToken},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid combination of id and password'}
-    },
+        {
+            name: "random id + access password",
+            body: {
+                id: randomString(),
+                password: infiniteLifetimeAddress1.accessPassword,
+                jwt: infiniteLifetimeAddress1.writeToken
+            },
+            expectedCode: 401,
+            expectedBody: {info: 'invalid combination of id and password'}
+        },
 
-    {
-        name: "other id + master password",
-        body: {id: infiniteLifetimeAddress2.id, password: infiniteLifetimeAddress1.masterPassword, jwt: infiniteLifetimeAddress1.writeToken},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid combination of id and password'}
-    },
+        {
+            name: "random id + master password",
+            body: {
+                id: randomString(),
+                password: infiniteLifetimeAddress1.masterPassword,
+                jwt: infiniteLifetimeAddress1.writeToken
+            },
+            expectedCode: 401,
+            expectedBody: {info: 'invalid combination of id and password'}
+        },
 
-    {
-        name: "complementary id + master password",
-        body: {id: infiniteLifetimeAddress1.id, password: infiniteLifetimeAddress1.masterPassword, jwt: infiniteLifetimeAddress1.writeToken},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid combination of id and password'}
-    },
-]}
+        {
+            name: "other id + empty password",
+            body: {id: infiniteLifetimeAddress2.id, password: '', jwt: infiniteLifetimeAddress1.writeToken},
+            expectedCode: 401,
+            expectedBody: {info: 'invalid combination of id and password'}
+        },
 
-function generateInvalidTokenTests(): EndpointTest[] {return [
+        {
+            name: "other id + random password",
+            body: {id: infiniteLifetimeAddress2.id, password: randomString(), jwt: infiniteLifetimeAddress1.writeToken},
+            expectedCode: 401,
+            expectedBody: {info: 'invalid combination of id and password'}
+        },
 
-    {
-        name: "empty jwt",
-        body: {id: infiniteLifetimeAddress1.id, password: infiniteLifetimeAddress1.accessPassword, jwt: ''},
-        expectedCode: 400,
-        expectedBody: {info: 'invalid jwt'}
-    },
+        {
+            name: "other id + access password",
+            body: {
+                id: infiniteLifetimeAddress2.id,
+                password: infiniteLifetimeAddress1.accessPassword,
+                jwt: infiniteLifetimeAddress1.writeToken
+            },
+            expectedCode: 401,
+            expectedBody: {info: 'invalid combination of id and password'}
+        },
 
-    {
-        name: "random jwt",
-        body: {id: infiniteLifetimeAddress1.id, password: infiniteLifetimeAddress1.accessPassword, jwt: randomString()},
-        expectedCode: 400,
-        expectedBody: {info: 'invalid jwt'}
-    },
+        {
+            name: "other id + master password",
+            body: {
+                id: infiniteLifetimeAddress2.id,
+                password: infiniteLifetimeAddress1.masterPassword,
+                jwt: infiniteLifetimeAddress1.writeToken
+            },
+            expectedCode: 401,
+            expectedBody: {info: 'invalid combination of id and password'}
+        },
 
-    {
-        name: "invalid jwt (read mode)",
-        body: {id: infiniteLifetimeAddress1.id, password: infiniteLifetimeAddress1.accessPassword, jwt: infiniteLifetimeAddress1.readToken},
-        expectedCode: 400,
-        expectedBody: {info: 'invalid jwt'}
-    },
+        {
+            name: "complementary id + master password",
+            body: {
+                id: infiniteLifetimeAddress1.id,
+                password: infiniteLifetimeAddress1.masterPassword,
+                jwt: infiniteLifetimeAddress1.writeToken
+            },
+            expectedCode: 401,
+            expectedBody: {info: 'invalid combination of id and password'}
+        },
+    ]
+}
 
-    {
-        name: "invalid jwt (other read token)",
-        body: {id: infiniteLifetimeAddress1.id, password: infiniteLifetimeAddress1.accessPassword, jwt: infiniteLifetimeAddress2.readToken},
-        expectedCode: 400,
-        expectedBody: {info: 'invalid jwt'}
-    },
+function generateInvalidTokenTests(): EndpointTest[] {
+    return [
 
-    {
-        name: "invalid jwt (other write token)",
-        body: {id: infiniteLifetimeAddress1.id, password: infiniteLifetimeAddress1.accessPassword, jwt: infiniteLifetimeAddress2.writeToken},
-        expectedCode: 400,
-        expectedBody: {info: 'invalid jwt'}
-    },
-]}
+        {
+            name: "empty jwt",
+            body: {id: infiniteLifetimeAddress1.id, password: infiniteLifetimeAddress1.accessPassword, jwt: ''},
+            expectedCode: 400,
+            expectedBody: {info: 'invalid jwt'}
+        },
+
+        {
+            name: "random jwt",
+            body: {
+                id: infiniteLifetimeAddress1.id,
+                password: infiniteLifetimeAddress1.accessPassword,
+                jwt: randomString()
+            },
+            expectedCode: 400,
+            expectedBody: {info: 'invalid jwt'}
+        },
+
+        {
+            name: "invalid jwt (read mode)",
+            body: {
+                id: infiniteLifetimeAddress1.id,
+                password: infiniteLifetimeAddress1.accessPassword,
+                jwt: infiniteLifetimeAddress1.readToken
+            },
+            expectedCode: 400,
+            expectedBody: {info: 'invalid jwt'}
+        },
+
+        {
+            name: "invalid jwt (other read token)",
+            body: {
+                id: infiniteLifetimeAddress1.id,
+                password: infiniteLifetimeAddress1.accessPassword,
+                jwt: infiniteLifetimeAddress2.readToken
+            },
+            expectedCode: 400,
+            expectedBody: {info: 'invalid jwt'}
+        },
+
+        {
+            name: "invalid jwt (other write token)",
+            body: {
+                id: infiniteLifetimeAddress1.id,
+                password: infiniteLifetimeAddress1.accessPassword,
+                jwt: infiniteLifetimeAddress2.writeToken
+            },
+            expectedCode: 400,
+            expectedBody: {info: 'invalid jwt'}
+        },
+    ]
+}
 
 function successfulInvalidation(): void {
     test("successful invalidation", async () => {

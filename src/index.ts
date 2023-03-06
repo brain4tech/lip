@@ -2,7 +2,7 @@ import Elysia, {t} from 'elysia'
 import {jwt} from '@elysiajs/jwt'
 import {EndpointHandler} from './endpointhandler'
 import {Env, printToStdout} from './utils'
-import { lipController } from './lip'
+import {lipController} from './lip'
 
 export {lip}
 
@@ -176,7 +176,7 @@ app.onError(({code, set, error}) => {
 
     if (Env.toStdout)
         printToStdout(`Caught ${error.name}: '${error.message}'`)
-        printToStdout(error)
+    printToStdout(error)
 
     if (code == 'VALIDATION') {
         set.status = 400

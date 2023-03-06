@@ -1,8 +1,13 @@
-
-
 import {describe, expect, test,} from "bun:test"
-import {callPostEndpoint, testSuite, randomString, randomWhitespacePadding, EndpointTest, randomInt, randomIpv4Address, randomIpv6Address, regenerateWriteJWT} from "../definitions";
-import {infiniteLifetimeAddress1, infiniteLifetimeAddress2} from "../addresses";
+import {
+    callPostEndpoint,
+    EndpointTest,
+    randomInt,
+    randomString,
+    randomWhitespacePadding,
+    testSuite
+} from "../definitions";
+import {infiniteLifetimeAddress1} from "../addresses";
 
 export {retrieveEndpointTests}
 
@@ -18,9 +23,9 @@ async function retrieveEndpointTests(): Promise<void> {
             testSuite('empty', '/retrieve', schemaEmptyValueTests)
             testSuite('whitespace', '/retrieve', schemaWhitespaceValuesTests)
             testSuite('non-value', '/retrieve', schemaNonValueTypeTests)
-        })        
+        })
     })
-    
+
     testSuite('authentication', '/retrieve', [], generateInvalidAuthenticationTests)
     testSuite('invalid jwt authentication', '/retrieve', [], generateInvalidAuthenticationTests)
 
@@ -74,7 +79,7 @@ const schemaNonValueTypeTests: EndpointTest[] = [
 
     {
         name: "jwt (null)",
-        body: { jwt: null},
+        body: {jwt: null},
         expectedCode: 400,
         expectedBody: {info: 'could not validate json, please check json, content-type and documentation'}
     },
@@ -102,22 +107,24 @@ const schemaNonValueTypeTests: EndpointTest[] = [
 ]
 
 
-function generateInvalidAuthenticationTests(): EndpointTest[] {return [
+function generateInvalidAuthenticationTests(): EndpointTest[] {
+    return [
 
-    {
-        name: "random jwt",
-        body: {jwt: randomString()},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid authentication'}
-    },
-    
-    {
-        name: "write jwt",
-        body: {jwt: infiniteLifetimeAddress1.writeToken},
-        expectedCode: 401,
-        expectedBody: {info: 'invalid token mode'}
-    },
-]}
+        {
+            name: "random jwt",
+            body: {jwt: randomString()},
+            expectedCode: 401,
+            expectedBody: {info: 'invalid authentication'}
+        },
+
+        {
+            name: "write jwt",
+            body: {jwt: infiniteLifetimeAddress1.writeToken},
+            expectedCode: 401,
+            expectedBody: {info: 'invalid token mode'}
+        },
+    ]
+}
 
 function successfulRetrieval(): void {
     test("successful retrieval", async () => {
