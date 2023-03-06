@@ -147,10 +147,19 @@ class EndpointHandler {
             return this.response("invalid authentication", 401)
         }
 
-        // if write token is valid, but not in write mapping
+        // if write token is valid, but id not in write mapping
         if (!this.writeJWTs.has(authenticated.id)){
             return this.response("invalid authentication", 401)
         }
+
+        // token value is in mapping
+        let tokenInMapping: boolean = false
+        this.writeJWTs.forEach( (value, key) => {
+            if (value !== data.jwt) return
+            if (key !== authenticated.id) return
+            tokenInMapping = true            
+        })
+        if (!tokenInMapping) return this.response("invalid authentication", 401)
 
         const updateTime = Date.now()
         let newLifetime: number | null = null
