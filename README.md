@@ -10,7 +10,7 @@ It's ...
 - **extensible**, so alternative web frameworks and runtimes can be used if desired (you will need to rewrite some code tho)
 - **easy-to-use** and **straight-forward**, because we don't like complicated APIs
 
-***lip* is currently in development. While the `main` branch can be used in production, not all needed features will be included. The application starts on `0.0.0.0:8080` by default.**
+***lip* is currently in development. While the `main` branch can be used in production, not all required (security) features are included. The application starts on `0.0.0.0:8080` by default.**
 
 <h2>Table of Contents</h2>
 
@@ -22,7 +22,6 @@ It's ...
   - [Final notice](#final-notice)
 - [Missing features and ToDo's](#missing-features-and-todos)
 - [A bit on the Why's](#a-bit-on-the-whys)
-- [About internal architectures and made decisions](#about-internal-architectures-and-made-decisions)
 - [Documentation](#documentation)
   - [Concepts](#concepts)
     - [Authentication](#authentication)
@@ -36,6 +35,7 @@ It's ...
     - [`/jwt`](#jwt)
     - [`/invalidatejwt`](#invalidatejwt)
 - [FAQ](#faq)
+  - [Why this project and idea?](#why-this-project-and-idea)
   - [Why Bun and Typescript?](#why-bun-and-typescript)
   - [How can *lip* be extended towars my needs?](#how-can-lip-be-extended-towars-my-needs)
   - [Dude, why is the code so bad? Are you a beginner?](#dude-why-is-the-code-so-bad-are-you-a-beginner)
@@ -122,6 +122,7 @@ Currently, there are several features missing for the project to be "completed":
 
 -  [ ] use bcrypt password hashing instead of sha256 for improved security and/or password salting
 -  [x] source code documentation
+-  [x] endpoint tests
 -  [x] protect reading/writing id's using passwords
 -  [x] use JWTs for regular address updating
 -  [x] add JWT requiring cooldown + modify JWT expire date
@@ -142,9 +143,6 @@ Basically *lip* is a text-sharing application, where each text is secured with a
 <br>This means you need a *small*, *easy to host* web application that is freely accessible on the web by all your architecture participants. But because it's on the open web, you need password protection. And because the application may be moved to another location and clients may vary, you need a fixed id that is reserved and can be shipped to the client.
 
 A tangible example would be a server on a local machine and a web application that requires data from the local machine. The web application needs to directly access the local machine, but is unable to find it's ip address (multicasts are disabled within the browser sandbox). Now you can take a small detour with this application, retrieve the needed ip address and directly communicate with your local server.
-
-## About internal architectures and made decisions
-> ToDo
 
 ## Documentation
 
@@ -345,15 +343,17 @@ The return JSON examples below are only returned on code `200`.
 - `400` JWT invalid, wrong token mode
 - `401` invalid authentication (id does not exist, wrong password)
 
----
 
 ## FAQ
 
+### Why this project and idea?
+I was in need of this kind of webservice for a much larger project. After some research, I found no simple, lightweight solution to fix my problem. So then I wrote my own one.
+
 ### Why Bun and Typescript?
-> ToDo
+I wanted to learn Javascript/Typescript to have an advantage in future development propjects (I mean, every developer has to visit Javascript at one time in his boring life). And because I'm interested in new technologies, I chose Bun as the runtime.
 
 ### How can *lip* be extended towars my needs?
-> ToDo
+I understand that Bun is not the first choise for Javascript developers. The architecture is kept generic, so the three main parts (routing, handling, database) can be reprogrammed and swap to your likings. The code is not _that_ complicated, so just start at `src/index.ts` for a better understanding.
 
 ### Dude, why is the code so bad? Are you a beginner?
-> Kinda, but ToDo
+Yes, but also no. I have ~8 years experience in coding, but using Typescript is new for me. Please have mercy and feel free to educate me on best practices and coding standarts :-)
