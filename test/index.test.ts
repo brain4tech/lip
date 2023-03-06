@@ -3,6 +3,8 @@ import {callIndexEndpoint} from "./definitions";
 import { createEndpointTests } from "./endpoints/create";
 import { jwtEndpointTests } from "./endpoints/jwt";
 import { invalidatejwtEndpointTests } from "./endpoints/invalidatejwt";
+import { updateEndpointTests } from "./endpoints/update";
+import { retrieveEndpointTests } from "./endpoints/retrieve";
 
 import {lip} from '../src'
 
@@ -27,7 +29,12 @@ function runTests(): void {
     
     describe('CREATE', createEndpointTests)
     describe('JWT', jwtEndpointTests)
-    describe('INVALIDATE JWT', invalidatejwtEndpointTests)    
+    describe('INVALIDATE JWT', invalidatejwtEndpointTests)
+    describe('UPDATE', updateEndpointTests)
+    describe('RETRIEVE', retrieveEndpointTests)
+
+    // test jwt lifetime when ip address is expired
+    // test jwt lifetimes when address was recreated
 }
 
 runTests()
