@@ -10,7 +10,8 @@
     "@elysiajs/jwt": "^0.2.1",
     "@types/node": "^18.14.0",
     "elysia": "latest",
-    "limiter": "^2.1.0"
+    "limiter": "^2.1.0",
+    "random-ipv6": "^1.0.2"
   },
   "devDependencies": {
     "bun-types": "latest"

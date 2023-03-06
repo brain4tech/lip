@@ -1,11 +1,15 @@
 import {endpointBase} from "./index.test";
 import {randomBytes} from "crypto";
 import {describe, expect, test} from "bun:test";
+import {lipAddress} from "./addresses";
+var randomIpv6 = require('random-ipv6');
 
 export {callIndexEndpoint, callPostEndpoint}
 export {EndpointTest, testSuite}
 export {randomString, randomWhitespacePadding, randomInt}
+export {randomIpv4Address, randomIpv6Address}
 export {padString, nowToSeconds}
+export {regenerateWriteJWT}
 
 /**
  * Define global type to use.
@@ -96,6 +100,22 @@ function randomString(halfLength: number = 5): string{
 }
 
 /**
+ * Generate a random ipv4 address.
+ * @returns The generated address
+ */
+function randomIpv4Address(): string{
+    return `${randomInt(256)}.${randomInt(256)}.${randomInt(256)}.${randomInt(256)}`
+}
+
+/**
+ * Generate a random ipv6 address.
+ * @returns The generated address
+ */
+function randomIpv6Address(): string{
+    return randomIpv6().toString()
+}
+
+/**
  * Generate a specified amount of random whitespace padding.
  * @param count Amount of padding.
  * @returns The generated string.
@@ -136,4 +156,21 @@ function randomInt(max: number): number{
  */
 function nowToSeconds(): number {
     return Math.floor(Date.now() / 1000)
+}
+
+async function regenerateWriteJWT(id: lipAddress): Promise<string> {
+
+    await Promise.resolve(callPostEndpoint('/invalidatejwt', {
+        id: id.id,
+        password: id.accessPassword,
+        jwt: id.writeToken
+    }))
+
+    const result = await Promise.resolve(callPostEndpoint('/jwt', {
+        id: id.id,
+        password: id.accessPassword,
+        mode: 'write'
+    }))
+
+    return result.json.info
 }
