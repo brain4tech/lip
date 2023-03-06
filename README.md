@@ -37,7 +37,7 @@ It's ...
 - [FAQ](#faq)
   - [Why this project and idea?](#why-this-project-and-idea)
   - [Why Bun and Typescript?](#why-bun-and-typescript)
-  - [How can *lip* be extended towars my needs?](#how-can-lip-be-extended-towars-my-needs)
+  - [How can *lip* be extended towards my needs?](#how-can-lip-be-extended-towards-my-needs)
   - [Dude, why is the code so bad? Are you a beginner?](#dude-why-is-the-code-so-bad-are-you-a-beginner)
 
 
@@ -352,7 +352,7 @@ I was in need of this kind of webservice for a much larger project. After some r
 ### Why Bun and Typescript?
 I wanted to learn Javascript/Typescript to have an advantage in future development propjects (I mean, every developer has to visit Javascript at one time in his boring life). And because I'm interested in new technologies, I chose Bun as the runtime.
 
-### How can *lip* be extended towars my needs?
+### How can *lip* be extended towards my needs?
 I understand that Bun is not the first choise for Javascript developers. The architecture is kept generic, so the three main parts (routing, handling, database) can be reprogrammed and swap to your likings. The code is not _that_ complicated, so just start at `src/index.ts` for a better understanding.
 
 ### Dude, why is the code so bad? Are you a beginner?
