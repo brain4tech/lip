@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@elysiajs/jwt": "^0.2.1",
+    "@node-rs/bcrypt": "^1.6.2",
     "@types/node": "^18.14.0",
     "elysia": "latest",
     "limiter": "^2.1.0",

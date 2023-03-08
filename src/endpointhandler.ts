@@ -13,8 +13,8 @@ import {
     UpdateObject
 } from "./interfaces"
 import {isIP} from "net"
-import {createHash} from "crypto"
 import {RateLimiter, RateLimiterOpts} from "limiter"
+import {hashSync, verifySync} from "@node-rs/bcrypt"
 
 export {EndpointHandler}
 
@@ -426,8 +426,8 @@ class EndpointHandler {
      * @param input String to hash.
      * @private
      */
-    private hashString(input: string): string {
-        return createHash('sha256').update(input).digest('hex')
+    private hashString(input: string, rounds: number = 12): string {
+        return hashSync(input, rounds)
     }
 
     /**
@@ -437,12 +437,7 @@ class EndpointHandler {
      * @private
      */
     private comparePasswordWithHash(password: string, passwordHash: string): boolean {
-        const hash = createHash('sha256').update(password).digest('hex')
-        if (hash !== passwordHash) {
-            return false
-        }
-
-        return true
+        return verifySync(password, passwordHash)
     }
 
     /**
