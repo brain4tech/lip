@@ -85,10 +85,14 @@ class BunDbHandler implements DbHandlerInterface {
         const queryStmt = this.db.query("SELECT * FROM addresses WHERE id = ?")
         if (queryStmt.get(id) === null) return false
 
-        if (lifetime) {
-            this.db.run("UPDATE addresses SET ip_address = ?, last_update = ?, lifetime = ? WHERE id = ?", ip_address, timestamp.toString(), lifetime.toString(), id);
-        } else {
-            this.db.run("UPDATE addresses SET ip_address = ?, last_update = ? WHERE id = ?", ip_address, timestamp.toString(), id);
+        try {
+            if (lifetime) {
+                this.db.run("UPDATE addresses SET ip_address = ?, last_update = ?, lifetime = ? WHERE id = ?", ip_address, timestamp.toString(), lifetime.toString(), id);
+            } else {
+                this.db.run("UPDATE addresses SET ip_address = ?, last_update = ? WHERE id = ?", ip_address, timestamp.toString(), id);
+            }
+        } catch (error) {
+            return false
         }
 
         return true
@@ -123,7 +127,11 @@ class BunDbHandler implements DbHandlerInterface {
         const queryStmt = this.db.query("SELECT * FROM addresses WHERE id = ?")
         if (queryStmt.get(id) === null) return false
 
-        this.db.run("DELETE FROM addresses WHERE id = ?", id);
+        try{
+            this.db.run("DELETE FROM addresses WHERE id = ?", id);
+        } catch (error) {
+            return false
+        }
         return true
     }
 

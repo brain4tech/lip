@@ -120,7 +120,8 @@ You'll be better when using this solution in a closed, project-intern environmen
 
 Currently, there are several features missing for the project to be "completed":
 
--  [ ] use bcrypt password hashing instead of sha256 for improved security and/or password salting
+-  [ ] fix publishing/retrieving inconsistencies created by longer hashing times
+-  [x] use bcrypt password hashing instead of sha256 for improved security
 -  [x] source code documentation
 -  [x] endpoint tests
 -  [x] protect reading/writing id's using passwords
@@ -128,12 +129,12 @@ Currently, there are several features missing for the project to be "completed":
 -  [x] add JWT requiring cooldown + modify JWT expire date
 -  [x] add lifetime for id to free it after certain amount of time (infinite should also be possible)
 -  [x] easy deployment with docker and docker compose
--  [ ] overview on existing id's and their lifetime
 
 Possible features for post project completion could be:
-- a password reset feature, connected to an email
-- multiple sdk implementations for both publishing and retrieving ip addresses
 - multiplattform cli for application usage from the command line
+- overview on existing id's and their lifetime (by e.g. application password)
+- password reset feature, connected to an email
+- multiple sdk implementations for both publishing and retrieving ip addresses
 
 ## A bit on the Why's
 Basically *lip* is a text-sharing application, where each text is secured with a pre-known id and password. So when starting a "server" and "client" that should communicate, but are unable to find each other (because of e.g. outer restrictions), they can use the set id and password to publish and retrieve the correct ip addresses.

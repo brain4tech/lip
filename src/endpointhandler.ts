@@ -13,8 +13,8 @@ import {
     UpdateObject
 } from "./interfaces"
 import {isIP} from "net"
-import {createHash} from "crypto"
 import {RateLimiter, RateLimiterOpts} from "limiter"
+import {hashSync, verifySync} from "@node-rs/bcrypt"
 
 export {EndpointHandler}
 
@@ -80,10 +80,8 @@ class EndpointHandler {
         if (masterPassword === '') return this.response("master password cannot be emtpy", 400)
 
         // validate lifetime
-        if (data.lifetime !== undefined) {
-            if (!this.checkLifetimeNumber(data.lifetime)) return this.response("invalid lifetime setting", 400)
-            lifetime = this.calculateLifetime(data.lifetime)
-        }
+        if (data.lifetime !== undefined && !this.checkLifetimeNumber(data.lifetime)) return this.response("invalid lifetime setting", 400)
+    
 
         // check if id already exists to prevent unnecessary calculations
         const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(id)
@@ -94,8 +92,15 @@ class EndpointHandler {
             this.dbHandler.deleteAddress(ipAddress.id)
         }
 
-        // calculate password hashes and store in db
-        const success = this.dbHandler.createAddress(id, this.hashString(accessPassword), this.hashString(masterPassword), Date.now(), lifetime)
+        // calculate password hashes
+        const accessPasswordHash = this.hashString(accessPassword)
+        const masterPasswordHash = this.hashString(masterPassword)
+
+        // set lifetime after calculating hashes
+        if (data.lifetime !== undefined) lifetime = this.calculateLifetime(data.lifetime)
+
+        // store in db
+        const success = this.dbHandler.createAddress(id, accessPasswordHash, masterPasswordHash, Date.now(), lifetime)
         if (!success) return this.response(`error creating '${id}'`, 500)
 
         // instantiate rate limiter
@@ -179,7 +184,8 @@ class EndpointHandler {
             newLifetime = this.calculateLifetime(lifetimeDelta)
         }
 
-        this.dbHandler.updateAddress(authenticated.id, data.ip_address, updateTime, newLifetime)
+        const success = this.dbHandler.updateAddress(authenticated.id, data.ip_address, updateTime, newLifetime)
+        if (!success) return this.response(`error updating id '${authenticated.id}'`, 500)
 
         let returnObject: EndpointReturnObject = this.response()
         returnObject.return.last_update = updateTime
@@ -237,7 +243,8 @@ class EndpointHandler {
         if (this.writeJWTs.has(data.id)) this.writeJWTs.delete(data.id)
 
         // delete id from db
-        this.dbHandler.deleteAddress(data.id)
+        const success = this.dbHandler.deleteAddress(data.id)
+        if (!success) return this.response(`error deleting id '${data.id}'`, 500)
 
         return this.response(`deleted address '${data.id}'`)
     }
@@ -426,8 +433,8 @@ class EndpointHandler {
      * @param input String to hash.
      * @private
      */
-    private hashString(input: string): string {
-        return createHash('sha256').update(input).digest('hex')
+    private hashString(input: string, rounds: number = 12): string {
+        return hashSync(input, rounds)
     }
 
     /**
@@ -437,12 +444,7 @@ class EndpointHandler {
      * @private
      */
     private comparePasswordWithHash(password: string, passwordHash: string): boolean {
-        const hash = createHash('sha256').update(password).digest('hex')
-        if (hash !== passwordHash) {
-            return false
-        }
-
-        return true
+        return verifySync(password, passwordHash)
     }
 
     /**
