@@ -10,7 +10,7 @@ It's ...
 - **extensible**, so alternative web frameworks and runtimes can be used if desired (you will need to rewrite some code tho)
 - **easy-to-use** and **straight-forward**, because we don't like complicated APIs
 
-***lip* is currently in development. While the `main` branch can be used in production, not all required (security) features are included. The application starts on `0.0.0.0:8080` by default.**
+***lip* is currently in development. The `main` branch is stable and can be used in production. The application starts on `0.0.0.0:8080` by default.**
 
 <h2>Table of Contents</h2>
 
@@ -116,11 +116,11 @@ You'll be better when using this solution in a closed, project-intern environmen
 
 
 ## Missing features and ToDo's
-*lip* is in early development. The `main` branch will contain stable releases, whereas development takes place in `dev` and features are developed in `feat/<feature-name>` branches.
+*lip* is in development. The `main` branch will contain stable releases, whereas development takes place in `dev` and features are developed in `feat/<feature-name>` branches.
 
-Currently, there are several features missing for the project to be "completed":
+Currently, there are several features needed for the project to be "completed":
 
--  [ ] fix publishing/retrieving inconsistencies created by longer hashing times
+-  [x] fix publishing/retrieving inconsistencies created by longer hashing times
 -  [x] use bcrypt password hashing instead of sha256 for improved security
 -  [x] source code documentation
 -  [x] endpoint tests
@@ -131,10 +131,11 @@ Currently, there are several features missing for the project to be "completed":
 -  [x] easy deployment with docker and docker compose
 
 Possible features for post project completion could be:
-- multiplattform cli for application usage from the command line
 - overview on existing id's and their lifetime (by e.g. application password)
 - password reset feature, connected to an email
 - multiple sdk implementations for both publishing and retrieving ip addresses
+
+A multiplatform, binary command line application is planned. It will be developed with Go.
 
 ## A bit on the Why's
 Basically *lip* is a text-sharing application, where each text is secured with a pre-known id and password. So when starting a "server" and "client" that should communicate, but are unable to find each other (because of e.g. outer restrictions), they can use the set id and password to publish and retrieve the correct ip addresses.
