@@ -38,13 +38,13 @@ function JWTLifetimeExpiredIpTests(): void {
 
     test("invalid reading/writing after address expiration", async () => {
 
-        // create one-second lifetimes, acquire tokens,
+        // create short lifetime, acquire tokens,
         // create zero-lifetime and acquire read and write tokens
         await Promise.resolve(callPostEndpoint('/create', {
             id: oneLifetimeAddress1.id,
             access_password: oneLifetimeAddress1.accessPassword,
             master_password: oneLifetimeAddress1.masterPassword,
-            lifetime: oneLifetimeAddress1.lifetime
+            lifetime: 2
         }))
 
         const result_1 = await Promise.resolve(callPostEndpoint('/jwt', {
@@ -91,8 +91,8 @@ function JWTLifetimeExpiredIpTests(): void {
 
         expect(ipAddress).toBe(result_4.json.info)
 
-        // wait a second
-        await Bun.sleep(2000)
+        // wait some time second
+        await Bun.sleep(3000)
 
         // retry reading/writing
         const result_5 = await Promise.resolve(callPostEndpoint('/update', {
