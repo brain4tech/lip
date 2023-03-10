@@ -10,7 +10,6 @@ export {lip}
  * Evaluate environment variables.
  */
 Env.reevaluate()
-printToStdout(Env.toObject())
 
 /**
  * Create app and other application components.
