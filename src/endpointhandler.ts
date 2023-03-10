@@ -179,7 +179,8 @@ class EndpointHandler {
             newLifetime = this.calculateLifetime(lifetimeDelta)
         }
 
-        this.dbHandler.updateAddress(authenticated.id, data.ip_address, updateTime, newLifetime)
+        const success = this.dbHandler.updateAddress(authenticated.id, data.ip_address, updateTime, newLifetime)
+        if (!success) return this.response(`error updating id '${authenticated.id}'`, 500)
 
         let returnObject: EndpointReturnObject = this.response()
         returnObject.return.last_update = updateTime
@@ -237,7 +238,8 @@ class EndpointHandler {
         if (this.writeJWTs.has(data.id)) this.writeJWTs.delete(data.id)
 
         // delete id from db
-        this.dbHandler.deleteAddress(data.id)
+        const success = this.dbHandler.deleteAddress(data.id)
+        if (!success) return this.response(`error deleting id '${data.id}'`, 500)
 
         return this.response(`deleted address '${data.id}'`)
     }
