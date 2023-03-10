@@ -80,10 +80,8 @@ class EndpointHandler {
         if (masterPassword === '') return this.response("master password cannot be emtpy", 400)
 
         // validate lifetime
-        if (data.lifetime !== undefined) {
-            if (!this.checkLifetimeNumber(data.lifetime)) return this.response("invalid lifetime setting", 400)
-            lifetime = this.calculateLifetime(data.lifetime)
-        }
+        if (data.lifetime !== undefined && !this.checkLifetimeNumber(data.lifetime)) return this.response("invalid lifetime setting", 400)
+    
 
         // check if id already exists to prevent unnecessary calculations
         const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(id)
@@ -94,8 +92,15 @@ class EndpointHandler {
             this.dbHandler.deleteAddress(ipAddress.id)
         }
 
-        // calculate password hashes and store in db
-        const success = this.dbHandler.createAddress(id, this.hashString(accessPassword), this.hashString(masterPassword), Date.now(), lifetime)
+        // calculate password hashes
+        const accessPasswordHash = this.hashString(accessPassword)
+        const masterPasswordHash = this.hashString(masterPassword)
+
+        // set lifetime after calculating hashes
+        if (data.lifetime !== undefined) lifetime = this.calculateLifetime(data.lifetime)
+
+        // store in db
+        const success = this.dbHandler.createAddress(id, accessPasswordHash, masterPasswordHash, Date.now(), lifetime)
         if (!success) return this.response(`error creating '${id}'`, 500)
 
         // instantiate rate limiter
