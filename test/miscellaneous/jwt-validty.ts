@@ -20,9 +20,12 @@ function JWTLifetimeExpiredIpTests(): void {
         // create zero-lifetime and acquire read and write tokens
         await Promise.resolve(callPostEndpoint('/create', {
             id: zeroLifetimeAddress1.id,
-            access_password: zeroLifetimeAddress1.masterPassword,
-            master_password: zeroLifetimeAddress1.masterPassword
+            access_password: zeroLifetimeAddress1.accessPassword,
+            master_password: zeroLifetimeAddress1.masterPassword,
+            lifetime: zeroLifetimeAddress1.lifetime
         }))
+
+        await Bun.sleep(1100)
 
         const result = await Promise.resolve(callPostEndpoint('/jwt', {
             id: zeroLifetimeAddress1.id,
@@ -35,11 +38,11 @@ function JWTLifetimeExpiredIpTests(): void {
 
     test("invalid reading/writing after address expiration", async () => {
 
-        // create one-second lifetimes, acqire tokens,
+        // create one-second lifetimes, acquire tokens,
         // create zero-lifetime and acquire read and write tokens
         await Promise.resolve(callPostEndpoint('/create', {
             id: oneLifetimeAddress1.id,
-            access_password: oneLifetimeAddress1.masterPassword,
+            access_password: oneLifetimeAddress1.accessPassword,
             master_password: oneLifetimeAddress1.masterPassword,
             lifetime: oneLifetimeAddress1.lifetime
         }))
