@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - LIP_HOSTNAME: <HOSTNAME>
+      - LIP_PORT: <PORT>
+      - LIP_DB_NAME: <MY_DB_NAME>
+      - LIP_JWT_SECRET: <MY_JWT_SECRET>
+      - LIP_TO_STDOUT: <TO_STDOUT>
+    container_name: lip
+    restart: always

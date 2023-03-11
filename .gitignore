@@ -46,5 +46,8 @@ package-lock.json
 .idea
 .fleet
 
+# docker compose
+docker-compose.yaml
+
 # other things
-db.sqlite
+lip.sqlite
