@@ -253,6 +253,20 @@ const ipAddressValidty: EndpointTest[] = [
     },
 
     {
+        name: "invalid ipv4 (8)",
+        body: {jwt: '', ip_address: "256.0.0.0:300000"},
+        expectedCode: 400,
+        expectedBody: {info: 'invalid ip address'}
+    },
+
+    {
+        name: "invalid ipv4 (9)",
+        body: {jwt: '', ip_address: "256.0.0.0:-1"},
+        expectedCode: 400,
+        expectedBody: {info: 'invalid ip address'}
+    },
+
+    {
         name: "invalid ipv6 (1)",
         body: {jwt: '', ip_address: '::x'},
         expectedCode: 400,
@@ -297,6 +311,20 @@ const ipAddressValidty: EndpointTest[] = [
     {
         name: "invalid ipv6 (7)",
         body: {jwt: '', ip_address: "[1:1:1:1:1:1:1:1]:asdlkj"},
+        expectedCode: 400,
+        expectedBody: {info: 'invalid ip address'}
+    },
+
+    {
+        name: "invalid ipv6 (8)",
+        body: {jwt: '', ip_address: "[1:1:1:1:1:1:1:1]:300000"},
+        expectedCode: 400,
+        expectedBody: {info: 'invalid ip address'}
+    },
+
+    {
+        name: "invalid ipv6 (9)",
+        body: {jwt: '', ip_address: "[1:1:1:1:1:1:1:1]:-1"},
         expectedCode: 400,
         expectedBody: {info: 'invalid ip address'}
     },

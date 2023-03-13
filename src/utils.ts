@@ -175,5 +175,7 @@ function extractPortNumber(input: string): number | null {
 
     if (isNaN(portNumber)) return null
 
+    if (portNumber < 0 || portNumber > 65535) return null
+
     return portNumber
 }
