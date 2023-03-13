@@ -26,6 +26,7 @@ It's ...
   - [Concepts](#concepts)
     - [Authentication](#authentication)
     - [Lifetimes](#lifetimes)
+    - [IP addresses](#ip-addresses)
   - [API endpoint reference](#api-endpoint-reference)
     - [`/` (GET)](#-get)
     - [`/create`](#create)
@@ -175,6 +176,16 @@ When deleting an id `a` and recreating it (`a'`), all existing JWTs for `a` will
 Each token can have a lifetime, measured in seconds. It can be set to everything between -1 and 31536000 (one year). `-1` stands for infinite, `0` for a token deletion within the next second. The lifetime is automatically refreshed with each token update.
 
 Token lifetimes are evaluated lazily. Thus exceeded id are deleted on the next access attempt.
+
+#### IP addresses
+*lip* supports both IPv4 and IPv6 addresses. Port notations are allowed.
+
+Examples:
+- 234.123.241.242
+- 234.123.241.242:4000
+- ::1 (defaults to [\::1])
+- [\::1]
+- [\::1]\:4000
 
 ### API endpoint reference
 Some general things to consider, before going into the details:
