@@ -12,9 +12,9 @@ import {
     JWTPayload,
     UpdateObject
 } from "./interfaces"
-import {isIP} from "net"
 import {RateLimiter, RateLimiterOpts} from "limiter"
 import {hashSync, verifySync} from "@node-rs/bcrypt"
+import {validateIpAddress} from "./utils"
 
 export {EndpointHandler}
 
@@ -81,7 +81,7 @@ class EndpointHandler {
 
         // validate lifetime
         if (data.lifetime !== undefined && !this.checkLifetimeNumber(data.lifetime)) return this.response("invalid lifetime setting", 400)
-    
+
 
         // check if id already exists to prevent unnecessary calculations
         const ipAddress: AddressDbSet | null = this.dbHandler.retrieveAddress(id)
@@ -115,7 +115,8 @@ class EndpointHandler {
      */
     async updateAddress(data: UpdateObject, jwt: any): Promise<EndpointReturnObject> {
 
-        if (isIP(data.ip_address) == 0) {
+        const validatedIpAddress = validateIpAddress(data.ip_address)
+        if (validatedIpAddress === null) {
             return this.response("invalid ip address", 400)
         }
 
@@ -184,7 +185,7 @@ class EndpointHandler {
             newLifetime = this.calculateLifetime(lifetimeDelta)
         }
 
-        const success = this.dbHandler.updateAddress(authenticated.id, data.ip_address, updateTime, newLifetime)
+        const success = this.dbHandler.updateAddress(authenticated.id, validatedIpAddress, updateTime, newLifetime)
         if (!success) return this.response(`error updating id '${authenticated.id}'`, 500)
 
         let returnObject: EndpointReturnObject = this.response()

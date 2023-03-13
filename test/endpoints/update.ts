@@ -239,6 +239,20 @@ const ipAddressValidty: EndpointTest[] = [
     },
 
     {
+        name: "invalid ipv4 (6)",
+        body: {jwt: '', ip_address: "256.0.0.0:"},
+        expectedCode: 400,
+        expectedBody: {info: 'invalid ip address'}
+    },
+
+    {
+        name: "invalid ipv4 (7)",
+        body: {jwt: '', ip_address: "256.0.0.0:asdk"},
+        expectedCode: 400,
+        expectedBody: {info: 'invalid ip address'}
+    },
+
+    {
         name: "invalid ipv6 (1)",
         body: {jwt: '', ip_address: '::x'},
         expectedCode: 400,
@@ -274,15 +288,50 @@ const ipAddressValidty: EndpointTest[] = [
     },
 
     {
-        name: "valid ipv4",
+        name: "invalid ipv6 (6)",
+        body: {jwt: '', ip_address: "[1:1:1:1:1:1:1:1]:"},
+        expectedCode: 400,
+        expectedBody: {info: 'invalid ip address'}
+    },
+
+    {
+        name: "invalid ipv6 (7)",
+        body: {jwt: '', ip_address: "[1:1:1:1:1:1:1:1]:asdlkj"},
+        expectedCode: 400,
+        expectedBody: {info: 'invalid ip address'}
+    },
+
+    {
+        name: "valid ipv4 (1)",
         body: {jwt: '', ip_address: randomIpv4Address()},
         expectedCode: 401,
         expectedBody: {info: 'invalid authentication'}
     },
 
     {
-        name: "valid ipv6",
+        name: "valid ipv4 (2)",
+        body: {jwt: '', ip_address: `${randomIpv4Address()}:8000`},
+        expectedCode: 401,
+        expectedBody: {info: 'invalid authentication'}
+    },
+
+    {
+        name: "valid ipv6 (1)",
         body: {jwt: '', ip_address: randomIpv6Address()},
+        expectedCode: 401,
+        expectedBody: {info: 'invalid authentication'}
+    },
+
+    {
+        name: "valid ipv6 (2)",
+        body: {jwt: '', ip_address: `[${randomIpv6Address()}]`},
+        expectedCode: 401,
+        expectedBody: {info: 'invalid authentication'}
+    },
+
+    {
+        name: "valid ipv6 (3)",
+        body: {jwt: '', ip_address: `[${randomIpv6Address()}]:8000`},
         expectedCode: 401,
         expectedBody: {info: 'invalid authentication'}
     },

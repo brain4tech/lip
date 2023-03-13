@@ -1,6 +1,7 @@
 import {randomBytes} from "crypto"
+import {isIP} from "net";
 
-export {Env, printToStdout}
+export {Env, printToStdout, validateIpAddress}
 
 class Env {
     public static hostname: string
@@ -90,7 +91,7 @@ function getFromEnv(name: string, other: string): string {
 }
 
 /**
- * Generates a string containg random characters.
+ * Generates a string containing random characters.
  * @param length Amount of characters in generated string.
  * @returns String containing random characters.
  */
@@ -105,4 +106,74 @@ function generateRandomString(length: number): string {
 function printToStdout(...data: any[]): void {
     if (Env.toStdout)
         console.log(...data)
+}
+
+
+/**
+ * Validate a given ip address.
+ * @param input Ip address to validate.
+ * @returns Validated ip address or null if unsuccessful.
+ */
+function validateIpAddress(input: string): string | null {
+
+    // use default validator
+    const ipVariant: number = isIP(input)
+
+    // return browser and url-ready ipv6 address
+    if (ipVariant === 6) return `[${input}]`
+    if (ipVariant === 4) return input
+
+    // custom validation if default fails
+    let ipAddress: string = ""
+
+    // check for brackets '[' and ']'
+    if (input.startsWith('[')) {
+
+        const firstPart = input.slice(1)
+        const endingBracket = firstPart.search(']')
+        if (endingBracket === -1) return null
+
+        const possibleIpAddress = firstPart.slice(0, endingBracket)
+        if (isIP(possibleIpAddress) !== 6) return null
+        ipAddress = `[${possibleIpAddress}]`
+
+        // if ending bracket is last char in string
+        if (endingBracket === firstPart.length - 1) return ipAddress
+
+        const possiblePortNumber = extractPortNumber(firstPart.slice(endingBracket + 1))
+        if (possiblePortNumber === null) return null
+
+        return `${ipAddress}:${possiblePortNumber}`
+
+    }
+
+    const colonPosition = input.search(':')
+    if (colonPosition === -1) return null
+    const possibleIpAddress = input.slice(0, colonPosition)
+
+    if (isIP(possibleIpAddress) !== 4) return null
+    ipAddress = possibleIpAddress
+
+    const possiblePortNumber = extractPortNumber(input)
+    if (possiblePortNumber === null) return null
+
+    return `${ipAddress}:${possiblePortNumber}`
+}
+
+/**
+ * Extract the port number out of a given string.
+ * @param input Input string to search for :<port number>.
+ * @returns The port number if successful, else null
+ */
+function extractPortNumber(input: string): number | null {
+    const colonPosition = input.search(':')
+    if (colonPosition === -1) return null
+    if (colonPosition === input.length - 1) return null
+
+    const portString = input.slice(colonPosition + 1)
+    const portNumber = Number(portString)
+
+    if (isNaN(portNumber)) return null
+
+    return portNumber
 }
