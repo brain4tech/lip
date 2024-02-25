@@ -2,6 +2,10 @@
 
 **Publish and retrieve your local ip addresses!**
 
+## WARNING: This project is archived and deprecated
+This project originally served a research project for my uni. Since then I did not need it anymore. The idea and implementation might still be of interest tho, so feel free to get inspired and create your own solution.
+
+## Documentation
 *lip* (acronym for *Local Ip Publisher*) is a small webservice for publishing and retrieving (local) ip addresses, written in Typescript. It's mainly designed for distributed architectures that run in local networks, but are not able to find each other through local solutions (e.g. multicasts).
 
 It's ...
